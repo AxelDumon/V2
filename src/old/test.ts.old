@@ -1,0 +1,36 @@
+// for(let i = 0; i < 100 ; i++)
+//     setTimeout(function() {
+//         console.log(i);
+//     }, 0 * i);
+
+import { sleep } from './utils.ts';
+
+async function test() {
+	for (let i = 0; i < 100; i++) {
+		await new Promise<void>(resolve => {
+			setTimeout(function () {
+				console.log(i);
+				resolve();
+			}, 0 * i);
+		});
+	}
+}
+
+// function msleep(n: number) {
+//     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
+// }
+// function sleep(n: number) {
+//     msleep(n*1000)
+// }
+
+for (let i = 0; i < 1000; i++) {
+	console.log(i);
+	console.log(sleep(6));
+}
+
+// function sleep(n: number){
+//   var request = new XMLHttpRequest();
+//   request.open('GET', '/sleep.php?n=' + n, false);
+//   request.setRequestHeader("Content-Type", "text/plain");
+//   request.send(null);
+// }

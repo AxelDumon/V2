@@ -1,0 +1,70 @@
+import { randInt } from '../utils.ts';
+import { SIZE } from '../config.ts';
+
+const tab: boolean[][] = [...Array(SIZE)].map(() => Array(SIZE).fill(false));
+createGrid(tab);
+
+function createGrid(tab: boolean[][], cellSize: number = 5) {
+	const container = document.getElementsByClassName('render')[0];
+	const grid = document.createElement('div');
+	grid.style.display = 'grid';
+	grid.style.gridTemplateColumns = `repeat(${SIZE}, ${cellSize}px)`;
+	grid.style.gridTemplateRows = `repeat(${SIZE}, ${cellSize}px)`;
+	grid.style.gap = '1px';
+	tab.forEach(row => {
+		row.forEach(cell => {
+			const cellDiv = document.createElement('div');
+			cellDiv.style.width = `${cellSize}px`;
+			cellDiv.style.height = `${cellSize}px`;
+			cellDiv.style.border = '1px solid #909090';
+			cellDiv.style.backgroundColor = cell ? 'black' : 'white';
+			grid.appendChild(cellDiv);
+		});
+	});
+	container.innerHTML = '';
+	container.appendChild(grid);
+}
+
+function renderGrid(cell: [number, number], cellSize: number = 5) {
+	const grid: HTMLDivElement = document.getElementsByClassName('render')[0]
+		.firstChild as HTMLDivElement;
+	const cellDiv = document.createElement('div');
+	cellDiv.style.width = `${cellSize}px`;
+	cellDiv.style.backgroundColor = 'black';
+	cellDiv.style.height = `${cellSize}px`;
+	grid.children[cell[0] * SIZE + cell[1]].replaceWith(cellDiv);
+}
+
+async function exploreGrid(
+	tab: boolean[][],
+	startX: number = randInt(),
+	startY: number = randInt()
+) {
+	const directions = [
+		[0, 1],
+		[0, -1],
+		[1, 0],
+		[-1, 0],
+		[1, 1],
+		[1, -1],
+		[-1, 1],
+		[-1, -1],
+	];
+
+	let [x, y] = [startX, startY];
+	while (tab.every(cell => cell)) {
+		tab[x][y] = true;
+		for (const [dx, dy] of directions) {
+			const nx = x + dx;
+			const ny = y + dy;
+			if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && !tab[nx][ny]) {
+				[x, y] = [nx, ny];
+				break;
+			}
+		}
+		renderGrid([x, y]);
+	}
+	console.log('Finished');
+}
+
+exploreGrid(tab);
