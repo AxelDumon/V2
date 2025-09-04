@@ -128,7 +128,7 @@ export default function App() {
 	return (
 		<div
 			className="container py-4"
-			style={{ backgroundColor: '#63696eff', minHeight: '100vh' }}
+			style={{ backgroundColor: '#383838ff', minHeight: '100vh' }}
 		>
 			<div className="mb-3 d-flex flex-row gap-2 justify-content-center">
 				<button
@@ -146,11 +146,11 @@ export default function App() {
 				</button>
 			</div>
 			<div className="mb-3 text-center">
-				<span className="badge bg-info text-dark">
+				<span className="badge bg-light text-dark">
 					Cases inexplorées restantes : {tab.flat().filter(c => c === 0).length}
 				</span>
 			</div>
-			<div className="rounded p-3" style={{ backgroundColor: '#63696eff' }}>
+			<div className="rounded p-3" style={{ backgroundColor: '#383838ff' }}>
 				<Grid cellSize={20} tab={tab} />
 			</div>
 		</div>
