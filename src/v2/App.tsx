@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import Grid from './Grid';
-import { SIZE } from '../config';
+import { SIZE, SLEEP_TIME } from '../config';
 import { randInt, shuffle } from '../utils';
 
-// Cache local des cases MongoDB
-const cellsMap = new Map<string, string>(); // key: "x,y", value: MongoDB _id
+const cellsMap = new Map<string, string>();
 
 async function fetchCells() {
 	const res = await fetch('http://localhost:3001/api/cells');
@@ -54,9 +53,7 @@ export default function App() {
 		await fetch('http://localhost:3001/api/cells', {
 			method: 'DELETE',
 		});
-		// Vide le cache local
 		cellsMap.clear();
-		// Réinitialise la grille
 		setTab(Array.from({ length: SIZE }, () => Array(SIZE).fill(0)));
 	}
 
@@ -89,7 +86,7 @@ export default function App() {
 			});
 			undiscoveredSet.delete(`${x},${y}`);
 			saveCell(x, y, true); // Non bloquant
-			await new Promise(resolve => setTimeout(resolve, 10));
+			await new Promise(resolve => setTimeout(resolve, SLEEP_TIME));
 
 			let found = false;
 			for (const [dx, dy] of shuffle([
