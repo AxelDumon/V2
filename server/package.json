@@ -1,14 +1,25 @@
 {
   "name": "v2-server",
   "version": "1.0.0",
-  "main": "index.js",
-  "type": "commonjs",
+  "main": "build/server/index.js",
+  "type": "module",
+  "module": "esnext",
+  "resolveJsonModule": true,
+  "esModuleInterop": true,
   "scripts": {
-    "start": "node index.js"
+    "start": "npx ts-node index.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
     "express": "^4.21.2",
-    "mongoose": "^7.8.7"
+    "mongoose": "^7.8.7",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.3",
+    "typescript": "5.4"
   }
 }
