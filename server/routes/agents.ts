@@ -4,7 +4,6 @@ import Cell from '../models/Cell.ts';
 const router = express.Router();
 
 router.get('/', async (_req, res) => {
-	// Agrège le nombre de cases parcourues par chaque agent
 	const stats = await Cell.aggregate([
 		{ $unwind: '$agents' },
 		{ $group: { _id: '$agents', count: { $sum: 1 } } },

@@ -43,7 +43,6 @@ router.post('/', async (_req: Request, res: Response) => {
 		while (true) {
 			let foundFrontier = false;
 
-			// Recherche une case adjacente non explorée
 			for (const [dx, dy] of shuffle([
 				[0, 1],
 				[0, -1],
@@ -76,7 +75,6 @@ router.post('/', async (_req: Request, res: Response) => {
 			}
 
 			if (!foundFrontier) {
-				// Si bloqué, cherche une case non explorée aléatoire
 				console.log(
 					`Agent ${agentId}: No adjacent frontier found, teleporting...`
 				);

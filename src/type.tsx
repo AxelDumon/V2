@@ -1,7 +1,3 @@
-export type CellProps = {
-	size: number;
-};
-
 export type GridProps = {
 	size: number;
 	cellSize: number;
@@ -16,3 +12,9 @@ export type CellDTO = {
 };
 
 export type AgentStat = { _id: string; count: number };
+
+export type CellProps = {
+	size: number;
+	agentId?: string;
+	crossingNumber?: number;
+};

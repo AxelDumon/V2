@@ -1,8 +1,13 @@
 import Cell from '../Cell';
 
+type CellData = {
+	valeur: number;
+	agents?: string[];
+};
+
 type GridProps = {
 	cellSize: number;
-	tab: number[][];
+	tab: CellData[][];
 };
 
 export default function Grid({ cellSize, tab }: GridProps) {
@@ -14,7 +19,16 @@ export default function Grid({ cellSize, tab }: GridProps) {
 			{tab.map((row, i) => (
 				<div className="grid-row d-flex" key={i} style={{}}>
 					{row.map((cell, j) => (
-						<Cell key={`${i}-${j}`} size={cellSize} crossingNumber={cell} />
+						<Cell
+							key={`${i}-${j}`}
+							size={cellSize}
+							crossingNumber={cell.valeur}
+							agentId={
+								cell.agents && cell.agents.length > 0
+									? cell.agents[cell.agents.length - 1]
+									: undefined
+							}
+						/>
 					))}
 				</div>
 			))}

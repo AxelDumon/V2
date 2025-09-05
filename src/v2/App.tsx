@@ -7,11 +7,11 @@ const DELAY = Number(import.meta.env.VITE_DELAY);
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function App() {
-	const [tab, setTab] = useState<number[][]>(() =>
+	const [tab, setTab] = useState<any[][]>(() =>
 		Array.from({ length: SIZE }, () => Array(SIZE).fill(0))
 	);
 	const [agentStats, setAgentStats] = useState<AgentStat[]>([]);
-	const [exploring, setExploring] = useState(false);
+	// const [exploring, setExploring] = useState(false);
 	const intervalRef = useRef<number | null>(null);
 
 	async function fetchAgentStats() {
@@ -23,21 +23,27 @@ export default function App() {
 	async function fetchCells() {
 		const res = await fetch(`${API_URL}/api/cells`);
 		const cells = await res.json();
-		const newTab = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+		const newTab = Array.from({ length: SIZE }, () =>
+			Array(SIZE).fill({ valeur: 0, agents: [] })
+		);
 		cells.forEach((cell: any) => {
-			newTab[cell.x][cell.y] = cell.valeur || 0;
+			newTab[cell.x][cell.y] = {
+				valeur: cell.valeur || 0,
+				agents: cell.agents || [],
+			};
 		});
 		setTab(newTab);
 	}
 
 	async function triggerExploration() {
-		setExploring(true);
+		// setExploring(true);
 		await fetch(`${API_URL}/api/explore`, { method: 'POST' });
 		if (!intervalRef.current) {
 			intervalRef.current = window.setInterval(async () => {
 				await fetchCells();
+				await fetchAgentStats();
 				if (tab.flat().filter(c => c === 0).length === 0) {
-					setExploring(false);
+					// setExploring(false);
 					clearInterval(intervalRef.current!);
 					intervalRef.current = null;
 				}
@@ -48,7 +54,8 @@ export default function App() {
 	async function clearGrid() {
 		await fetch(`${API_URL}/api/init`, { method: 'POST' });
 		setTab(Array.from({ length: SIZE }, () => Array(SIZE).fill(0)));
-		setExploring(false);
+		// setExploring(false);
+		setAgentStats([]);
 		if (intervalRef.current) {
 			clearInterval(intervalRef.current);
 			intervalRef.current = null;
@@ -90,7 +97,11 @@ export default function App() {
 			</div>
 			<div className="mb-3 text-center">
 				<span className="badge bg-white text-dark">
-					Cases inexplorées restantes : {tab.flat().filter(c => c === 0).length}
+					Cases inexplorées restantes :{' '}
+					{SIZE ** 2 -
+						agentStats
+							.map(agent => Number(agent.count))
+							.reduce((a, b) => a + b, 0)}
 				</span>
 			</div>
 			<div className="border rounded p-3 bg-light">

@@ -3,7 +3,6 @@ import Cell from '../models/Cell.ts';
 
 const router = express.Router();
 
-// Créer une case
 router.post('/', async (req: any, res: any) => {
 	try {
 		const cell = new Cell(req.body);
@@ -14,7 +13,6 @@ router.post('/', async (req: any, res: any) => {
 	}
 });
 
-// Récupérer toutes les cases
 router.get('/', async (_req: any, res: any) => {
 	try {
 		const cells = await Cell.find();
@@ -24,7 +22,6 @@ router.get('/', async (_req: any, res: any) => {
 	}
 });
 
-// Mettre à jour une case
 router.put('/:id', async (req: any, res: any) => {
 	try {
 		const cell = await Cell.findByIdAndUpdate(req.params.id, req.body, {
@@ -36,7 +33,6 @@ router.put('/:id', async (req: any, res: any) => {
 	}
 });
 
-// Supprimer une case
 router.delete('/:id', async (req: any, res: any) => {
 	try {
 		await Cell.findByIdAndDelete(req.params.id);
@@ -46,7 +42,6 @@ router.delete('/:id', async (req: any, res: any) => {
 	}
 });
 
-// Supprimer toutes les cases
 router.delete('/', async (_req: any, res: any) => {
 	try {
 		await Cell.deleteMany({});

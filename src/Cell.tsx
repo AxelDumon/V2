@@ -1,26 +1,46 @@
-type Props = {
-	size: number;
-	crossingNumber: number;
-};
+// const background_colors: Record<number, string> = {
+// 	0: 'white',
+// 	1: 'darkgrey',
+// 	2: 'gold',
+// 	3: 'goldenrod',
+// 	4: 'tomato',
+// 	5: 'maroon',
+// };
 
-const background_colors: Record<number, string> = {
-	0: 'white',
-	1: 'darkgrey',
-	2: 'gold',
-	3: 'goldenrod',
-	4: 'tomato',
-	5: 'maroon',
-};
+import { CellProps } from './type';
 
-export default function Cell({ size, crossingNumber }: Props) {
+const agentColors: string[] = [
+	'#3498db', // bleu
+	'#e74c3c', // rouge
+	'#2ecc71', // vert
+	'#f1c40f', // jaune
+	'#9b59b6', // violet
+	'#e67e22', // orange
+	'#1abc9c', // turquoise
+	'#34495e', // gris foncé
+	'#fd79a8', // rose
+	'#00b894', // vert foncé
+];
+
+function getAgentColor(agentId?: string) {
+	if (!agentId) return 'white';
+	let hash = 0;
+	for (let i = 0; i < agentId.length; i++) {
+		hash = agentId.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const idx = Math.abs(hash) % agentColors.length;
+	return agentColors[idx];
+}
+
+export default function Cell({ size, agentId, crossingNumber }: CellProps) {
 	return (
 		<div
 			className="cell"
 			style={{
 				width: `${size}px`,
 				height: `${size}px`,
-				backgroundColor: background_colors[crossingNumber] || 'maroon',
-				color: crossingNumber > 0 ? 'white' : 'black',
+				backgroundColor: getAgentColor(agentId),
+				color: crossingNumber && crossingNumber > 0 ? 'white' : 'black',
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
@@ -28,7 +48,7 @@ export default function Cell({ size, crossingNumber }: Props) {
 				fontSize: `${size * 0.6}px`,
 			}}
 		>
-			{crossingNumber > 0 ? crossingNumber : ''}
+			{crossingNumber && crossingNumber > 0 ? crossingNumber : ''}
 		</div>
 	);
 }
