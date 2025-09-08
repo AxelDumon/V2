@@ -1,20 +1,20 @@
 import express from 'express';
-import Cell from '../models/Cell.ts';
 import dotenv from 'dotenv';
+import { getCellsCollection } from '../models/Cell.ts';
 dotenv.config();
 
 const router = express.Router();
 const SIZE = process.env.SIZE ? Number(process.env.SIZE) : 20;
 
 router.post('/', async (_req, res) => {
-	await Cell.deleteMany({});
+	await getCellsCollection().deleteMany({});
 	const bulk = [];
 	for (let i = 0; i < SIZE; i++) {
 		for (let j = 0; j < SIZE; j++) {
 			bulk.push({ x: i, y: j, valeur: 0 });
 		}
 	}
-	await Cell.insertMany(bulk);
+	await getCellsCollection().insertMany(bulk);
 	res.json({ status: 'initialized', count: bulk.length });
 });
 

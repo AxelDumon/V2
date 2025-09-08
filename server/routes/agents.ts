@@ -1,14 +1,16 @@
 import express from 'express';
-import Cell from '../models/Cell.ts';
+import { getCellsCollection } from '../models/Cell.ts';
 
 const router = express.Router();
 
 router.get('/', async (_req, res) => {
-	const stats = await Cell.aggregate([
-		{ $unwind: '$agents' },
-		{ $group: { _id: '$agents', count: { $sum: 1 } } },
-		{ $sort: { count: -1 } },
-	]);
+	const stats = await getCellsCollection()
+		.aggregate([
+			{ $unwind: '$agents' },
+			{ $group: { _id: '$agents', count: { $sum: 1 } } },
+			{ $sort: { count: -1 } },
+		])
+		.toArray();
 	res.json(stats);
 });
 

@@ -1,12 +1,19 @@
-import mongoose from 'mongoose';
+export type Cell = {
+	x: number;
+	y: number;
+	valeur: number;
+	agents: string[];
+};
 
-const cellSchema = new mongoose.Schema({
-	x: Number,
-	y: Number,
-	valeur: Number,
-	agents: [String],
-});
+import { Collection } from 'mongodb';
 
-const Cell = mongoose.model('Cell', cellSchema);
+let cellsCollection: Collection | undefined;
 
-export default Cell;
+export function setCellsCollection(collection: Collection) {
+	cellsCollection = collection;
+}
+
+export function getCellsCollection(): Collection {
+	if (!cellsCollection) throw new Error('cellsCollection not initialized');
+	return cellsCollection;
+}
