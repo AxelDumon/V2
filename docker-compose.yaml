@@ -26,29 +26,43 @@ services:
   node1:
     image: mongo:latest
     container_name: node1
-    command: mongod --replSet shard1
+    command: mongod --replSet shard1 --port 27018
     ports:
       - "27019:27018"
+    volumes:
+      - node1-data:/data/db
     networks:
-      - mongo-cluster
+      v2_mongo-cluster:
+        aliases:
+          - node1
+
 
   node2:
     image: mongo:latest
     container_name: node2
-    command: mongod --replSet shard1
+    command: mongod --replSet shard1 --port 27018
     ports:
       - "27020:27018"
+    volumes:
+      - node2-data:/data/db
     networks:
-      - mongo-cluster
+      v2_mongo-cluster:
+        aliases:
+          - node2
 
   node3:
     image: mongo:latest
     container_name: node3
-    command: mongod --replSet shard1
+    command: mongod --replSet shard1 --port 27018
     ports:
       - "27021:27018"
+    volumes:
+      - node3-data:/data/db
     networks:
-      - mongo-cluster
+      v2_mongo-cluster:
+        aliases:
+          - node3
+
 
   # Exploration agents
   agent1:
@@ -58,12 +72,14 @@ services:
     container_name: agent1
     environment:
       - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - PORT=3001
       - AGENT_ID=agent1
       - AGENT_PEERS=http://agent2:3001,http://agent3:3001
     ports:
       - "3001:3001"
+      - "8001:8000"
     networks:
-      - mongo-cluster
+     - v2_mongo-cluster
     depends_on:
       - node1
       - node2
@@ -76,12 +92,14 @@ services:
     container_name: agent2
     environment:
       - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - PORT=3002
       - AGENT_ID=agent2
       - AGENT_PEERS=http://agent1:3001,http://agent3:3001
     ports:
-      - "3002:3001"
+      - "3002:3002"
+      - "8002:8000"
     networks:
-      - mongo-cluster
+      - v2_mongo-cluster
     depends_on:
       - node1
       - node2
@@ -94,17 +112,24 @@ services:
     container_name: agent3
     environment:
       - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - PORT=3003
       - AGENT_ID=agent3
       - AGENT_PEERS=http://agent1:3001,http://agent2:3001
     ports:
-      - "3003:3001"
+      - "3003:3003"
+      - "8003:8000"
     networks:
-      - mongo-cluster
+      - v2_mongo-cluster
     depends_on:
       - node1
       - node2
       - node3
 
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:
+
 networks:
-  mongo-cluster:
+  v2_mongo-cluster:
     driver: bridge

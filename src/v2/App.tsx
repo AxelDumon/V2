@@ -91,6 +91,9 @@ export default function App() {
 					{agentStats.map(agent => (
 						<li className="text-white border" key={agent._id}>
 							Agent {agent._id} : {agent.count} cases
+							{agent.duration != null && (
+								<> — Temps : {agent.duration.toFixed(2)} s</>
+							)}
 						</li>
 					))}
 				</ul>
@@ -99,8 +102,8 @@ export default function App() {
 				<span className="badge bg-white text-dark">
 					Cases inexplorées restantes :{' '}
 					{SIZE ** 2 -
-						agentStats
-							.map(agent => Number(agent.count))
+						tab
+							.map(row => row.filter(cell => cell.valeur > 0).length)
 							.reduce((a, b) => a + b, 0)}
 				</span>
 			</div>

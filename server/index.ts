@@ -11,10 +11,12 @@ import { setCellsCollection } from './models/Cell.js';
 import type { Cell } from './models/Cell.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 const { MongoClient, ServerApiVersion } = await import('mongodb');
-const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/v2grid';
+const uri =
+	process.env.MONGO_URI ||
+	'mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1';
 
 const client = new MongoClient(uri, {
 	serverApi: {
@@ -24,8 +26,12 @@ const client = new MongoClient(uri, {
 	},
 });
 
-app.use(cors());
+// app.use(cors());
+app.use(cors({ origin: `http://localhost:800${PORT.toString().charAt(3)}` }));
 app.use(express.json());
+app.get('/', (_req, res) => {
+	res.send('Agent is running!');
+});
 app.use('/api/cells', cellsRouter);
 app.use('/api/explore', exploreRouter);
 app.use('/api/init', initRouter);
@@ -55,7 +61,7 @@ async function run() {
 		await cellsCollection.insertMany(bulk);
 		console.log(`Grille initialisée (${bulk.length} cases)`);
 
-		app.listen(PORT, async () => {
+		app.listen(PORT, '0.0.0.0', async () => {
 			console.log(`Serveur lancé sur le port ${PORT}`);
 		});
 	} finally {

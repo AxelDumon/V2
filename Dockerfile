@@ -1,8 +1,9 @@
 FROM node:20
 WORKDIR /app
 COPY . .
+RUN apt update
+RUN npm install -g concurrently
 RUN npm install
-RUN cd server && npm install
+RUN cd server && npm install && npx tsc
 EXPOSE 3001
-CMD ["npm", "start", ";", "cd", "server", ";", "npx", "tsc", "&&", "node", "build/index.js"]
-# CMD ["node", "server/index.js"]
+CMD ["npm", "run", "dev"]

@@ -292,3 +292,42 @@ podman rm <container_id>
 ```
 podman exec -ti <nom> /bin/bash
 ```
+
+
+### pour initialiser l'appli :
+
+```
+podman exec -it node1 mongosh --port 27018
+```
+
+dans le shell :
+```
+rs.initiate({
+  _id: "shard1",
+  members: [
+    { _id: 0, host: "node1:27018" },
+    { _id: 1, host: "node2:27018" },
+    { _id: 2, host: "node3:27018" }
+  ]
+})
+```
+
+```
+rs.status()
+```
+
+puis en dehors
+
+```
+podman restart agent1 agent2 agent3
+```
+
+---
+
+podman stop -a
+
+podman rm -a
+
+podman-compose up --build -d
+
+podman-compose down -v
