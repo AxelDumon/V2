@@ -2,13 +2,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
-import cellsRouter from './routes/cells.ts';
-import exploreRouter from './routes/explore.ts';
-import initRouter from './routes/init.ts';
-import agentsRouter from './routes/agents.ts';
+import cellsRouter from './routes/cells.js';
+import exploreRouter from './routes/explore.js';
+import initRouter from './routes/init.js';
+import agentsRouter from './routes/agents.js';
 import cors from 'cors';
-import { setCellsCollection } from './models/Cell.ts';
-import type { Cell } from './models/Cell.ts';
+import { setCellsCollection } from './models/Cell.js';
+import type { Cell } from './models/Cell.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;

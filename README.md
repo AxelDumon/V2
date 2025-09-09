@@ -14,3 +14,7 @@ Pour lancer le front il suffit d'être à la racine et de faire de même
 ```
 npm start
 ```
+
+podman run -it --detach --name test1 test:latest
+
+podman build -t test -f Dockerfile

@@ -191,7 +191,8 @@ podman run -it <image>
 
 # ex: podman
 
- run --detach --name todoDB -p <HOST_PORT(3000)>:27017 -v /path/to/host/data:/data/db docker.io/mongodb/mongodb-community-server:latest
+podman run --detach --name DB2 -p 3002:27017 -v /ho
+me/axeldumon/Code/V2:/data/db docker.io/mongodb/mongodb-community-server:latest
 
 ```
 
@@ -284,4 +285,10 @@ podman ps -a
 et supprimer :
 ```
 podman rm <container_id>
+```
+
+### SSH dedans
+
+```
+podman exec -ti <nom> /bin/bash
 ```

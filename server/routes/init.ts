@@ -1,6 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { getCellsCollection } from '../models/Cell.ts';
+import { getCellsCollection } from '../models/Cell.js';
 dotenv.config();
 
 const router = express.Router();

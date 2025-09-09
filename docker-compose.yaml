@@ -1,0 +1,110 @@
+# MONGO avec un shard de 3 noeuds
+# 
+# Auteur : P Mathieu
+# Date   : 20/08/2021
+#
+# Pour le lancer
+# docker-compose up -d
+
+# Pour s'y connecter
+# docker exec -it node1  mongosh --port 27018
+# docker exec -it node2  mongosh --port 27018
+
+# Pour arrêter
+# docker-compose down -v
+
+
+# ATTENTION, par defaut
+# mongod , mongos servent sur 27017
+# un shardsrv sert sur le port 27018
+# un configSvr sert sur le port 27019
+
+#---------------------------------------
+
+services:
+  # MongoDB nodes
+  node1:
+    image: mongo:latest
+    container_name: node1
+    command: mongod --replSet shard1
+    ports:
+      - "27019:27018"
+    networks:
+      - mongo-cluster
+
+  node2:
+    image: mongo:latest
+    container_name: node2
+    command: mongod --replSet shard1
+    ports:
+      - "27020:27018"
+    networks:
+      - mongo-cluster
+
+  node3:
+    image: mongo:latest
+    container_name: node3
+    command: mongod --replSet shard1
+    ports:
+      - "27021:27018"
+    networks:
+      - mongo-cluster
+
+  # Exploration agents
+  agent1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent1
+    environment:
+      - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - AGENT_ID=agent1
+      - AGENT_PEERS=http://agent2:3001,http://agent3:3001
+    ports:
+      - "3001:3001"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - node1
+      - node2
+      - node3
+
+  agent2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent2
+    environment:
+      - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - AGENT_ID=agent2
+      - AGENT_PEERS=http://agent1:3001,http://agent3:3001
+    ports:
+      - "3002:3001"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - node1
+      - node2
+      - node3
+
+  agent3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent3
+    environment:
+      - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - AGENT_ID=agent3
+      - AGENT_PEERS=http://agent1:3001,http://agent2:3001
+    ports:
+      - "3003:3001"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - node1
+      - node2
+      - node3
+
+networks:
+  mongo-cluster:
+    driver: bridge

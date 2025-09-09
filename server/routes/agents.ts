@@ -1,5 +1,5 @@
 import express from 'express';
-import { getCellsCollection } from '../models/Cell.ts';
+import { getCellsCollection } from '../models/Cell.js';
 
 const router = express.Router();
 

@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { v4 as uuidv4 } from 'uuid';
-import { getCellsCollection } from '../models/Cell.ts';
+import { getCellsCollection } from '../models/Cell.js';
 
 const router = express.Router();
 const DELAY = process.env.DELAY ? Number(process.env.DELAY) : 100;

@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "build/server/index.js",
   "type": "module",
-  "module": "esnext",
   "resolveJsonModule": true,
   "esModuleInterop": true,
   "scripts": {
-    "start": "npx ts-node index.ts"
+    "start": "npx ts-node index.ts",
+    "build": "tsc"
   },
   "dependencies": {
     "cors": "^2.8.5",
