@@ -9,6 +9,7 @@ import agentsRouter from './routes/agents.js';
 import cors from 'cors';
 import { setCellsCollection } from './models/Cell.js';
 import type { Cell } from './models/Cell.js';
+import { setAgentsCollection } from './models/Agent.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -47,6 +48,7 @@ async function run() {
 
 		const db = client.db('v2grid');
 		setCellsCollection(db.collection('cells'));
+		setAgentsCollection(db.collection('agents'));
 
 		// Init
 		const SIZE = process.env.SIZE ? Number(process.env.SIZE) : 20;
@@ -61,7 +63,7 @@ async function run() {
 		await cellsCollection.insertMany(bulk);
 		console.log(`Grille initialisée (${bulk.length} cases)`);
 
-		app.listen(PORT, '0.0.0.0', async () => {
+		app.listen(PORT, '0.0.0.0', () => {
 			console.log(`Serveur lancé sur le port ${PORT}`);
 		});
 	} finally {

@@ -24,13 +24,17 @@
 services:
   # MongoDB nodes
   node1:
-    image: mongo:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.mongo
     container_name: node1
-    command: mongod --replSet shard1 --port 27018
+    hostname: node1
+    command: /entrypoint.sh
     ports:
       - "27019:27018"
     volumes:
       - node1-data:/data/db
+      - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
     networks:
       v2_mongo-cluster:
         aliases:
@@ -40,7 +44,8 @@ services:
   node2:
     image: mongo:latest
     container_name: node2
-    command: mongod --replSet shard1 --port 27018
+    hostname: node2
+    command: mongod --replSet shard1 --port 27018 --bind_ip_all
     ports:
       - "27020:27018"
     volumes:
@@ -53,7 +58,8 @@ services:
   node3:
     image: mongo:latest
     container_name: node3
-    command: mongod --replSet shard1 --port 27018
+    hostname: node3
+    command: mongod --replSet shard1 --port 27018 --bind_ip_all
     ports:
       - "27021:27018"
     volumes:

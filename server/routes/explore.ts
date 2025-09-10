@@ -7,7 +7,6 @@ dotenv.config();
 import { v4 as uuidv4 } from 'uuid';
 import { Cell, getCellsCollection } from '../models/Cell.js';
 import { getAgentsCollection } from '../models/Agent.js';
-import { ObjectId } from 'mongodb';
 
 const router = express.Router();
 const DELAY = process.env.DELAY ? Number(process.env.DELAY) : 100;
@@ -64,14 +63,15 @@ router.post('/', async (_req: Request, res: Response) => {
 	if (isExploring) return res.json({ status: 'already exploring' });
 	isExploring = true;
 	const agentId = process.env.AGENT_ID ? process.env.AGENT_ID : uuidv4();
-	console.log(`Agent ${agentId} started exploring.`);
+	const agentName = process.env.AGENT_NAME || agentId;
+	console.log(`Agent ${agentName} started exploring.`);
 	res.json({ status: 'started' });
 
 	(async () => {
 		// Starts timer
 		const startTime = Date.now();
 		await getAgentsCollection().updateOne(
-			{ _id: new ObjectId(agentId) },
+			{ name: agentName },
 			{ $set: { startTime: new Date() } },
 			{ upsert: true }
 		);
@@ -103,7 +103,7 @@ router.post('/', async (_req: Request, res: Response) => {
 				if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
 					const reserved = await getCellsCollection().findOneAndUpdate(
 						{ x: nx, y: ny, valeur: 0 },
-						{ $inc: { valeur: 1 }, $addToSet: { agents: agentId } },
+						{ $inc: { valeur: 1 }, $addToSet: { agents: agentName } },
 						{ returnDocument: 'after' }
 					);
 					if (reserved) {
@@ -112,7 +112,7 @@ router.post('/', async (_req: Request, res: Response) => {
 						y = ny;
 						foundFrontier = true;
 						console.log(
-							`Agent ${agentId} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
+							`Agent ${agentName} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
 						);
 						await new Promise(resolve => setTimeout(resolve, DELAY));
 						break;
@@ -122,7 +122,7 @@ router.post('/', async (_req: Request, res: Response) => {
 
 			if (!foundFrontier) {
 				console.log(
-					`Agent ${agentId}: No adjacent frontier found, teleporting...`
+					`Agent ${agentName}: No adjacent frontier found, teleporting...`
 				);
 				const undiscovered = await getCellsCollection()
 					.aggregate([{ $match: { valeur: 0 } }, { $sample: { size: 1 } }])
@@ -132,7 +132,7 @@ router.post('/', async (_req: Request, res: Response) => {
 				const teleport = undiscovered[0];
 				const reserved = await getCellsCollection().findOneAndUpdate(
 					{ x: teleport.x, y: teleport.y, valeur: 0 },
-					{ $inc: { valeur: 1 }, $addToSet: { agents: agentId } },
+					{ $inc: { valeur: 1 }, $addToSet: { agents: agentName } },
 					{ returnDocument: 'after' }
 				);
 				if (reserved) {
@@ -140,7 +140,7 @@ router.post('/', async (_req: Request, res: Response) => {
 					x = reserved.x!;
 					y = reserved.y!;
 					console.log(
-						`Agent ${agentId} teleports to cell (${x}, ${y}), value: ${reserved.valeur}`
+						`Agent ${agentName} teleports to cell (${x}, ${y}), value: ${reserved.valeur}`
 					);
 					await new Promise(resolve => setTimeout(resolve, DELAY));
 				}
@@ -150,11 +150,11 @@ router.post('/', async (_req: Request, res: Response) => {
 		// End timer and log duration
 		const endTime = Date.now();
 		await getAgentsCollection().updateOne(
-			{ _id: new ObjectId(agentId) },
+			{ name: agentName },
 			{ $set: { endTime: new Date() } }
 		);
 		const durationSec = ((endTime - startTime) / 1000).toFixed(2);
-		console.log(`Agent ${agentId} finished in ${durationSec} seconds.`);
+		console.log(`Agent ${agentName} finished in ${durationSec} seconds.`);
 
 		isExploring = false;
 	})();

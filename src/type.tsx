@@ -11,7 +11,12 @@ export type CellDTO = {
 	_id: string;
 };
 
-export type AgentStat = { _id: string; count: number; duration: number | null };
+export type AgentStat = {
+	_id: string;
+	name: string;
+	count: number;
+	duration: number | null;
+};
 
 export type CellProps = {
 	size: number;

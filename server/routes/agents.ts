@@ -15,7 +15,7 @@ router.get('/', async (_req, res) => {
 
 	const agents = await getAgentsCollection().find({}).toArray();
 	const statsWithTime = stats.map(stat => {
-		const agent = agents.find(a => a._id === stat._id);
+		const agent = agents.find(a => a.name === stat._id);
 		let duration = null;
 		if (agent?.startTime && agent?.endTime) {
 			duration =
@@ -23,7 +23,7 @@ router.get('/', async (_req, res) => {
 					new Date(agent.startTime).getTime()) /
 				1000;
 		}
-		return { ...stat, duration };
+		return { ...stat, name: agent?.name || stat._id, duration };
 	});
 
 	res.json(statsWithTime);

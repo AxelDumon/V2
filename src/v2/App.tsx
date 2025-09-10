@@ -89,8 +89,8 @@ export default function App() {
 				<h5 className="text-white text-center">Cases parcourues par agent :</h5>
 				<ul>
 					{agentStats.map(agent => (
-						<li className="text-white border" key={agent._id}>
-							Agent {agent._id} : {agent.count} cases
+						<li className="text-white border" key={agent.name || agent._id}>
+							Agent {agent.name || agent._id} : {agent.count} cases
 							{agent.duration != null && (
 								<> — Temps : {agent.duration.toFixed(2)} s</>
 							)}
