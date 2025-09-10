@@ -65,6 +65,10 @@ export default function App() {
 	useEffect(() => {
 		fetchAgentStats();
 		fetchCells();
+		intervalRef.current = window.setInterval(async () => {
+			await fetchCells();
+			await fetchAgentStats();
+		}, DELAY);
 		return () => {
 			if (intervalRef.current) {
 				clearInterval(intervalRef.current);
