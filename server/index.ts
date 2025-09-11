@@ -16,10 +16,10 @@ const PORT = Number(process.env.PORT) || 3001;
 
 const { MongoClient, ServerApiVersion } = await import('mongodb');
 const uri =
-	process.env.MONGO_URI ||
-	'mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1';
+	process.env.MONGO_URI || 'mongodb://localhost:27018/v2grid?replicaSet=shard1';
 
 const client = new MongoClient(uri, {
+	readPreference: 'secondaryPreferred',
 	serverApi: {
 		version: ServerApiVersion.v1,
 		strict: true,
@@ -27,8 +27,8 @@ const client = new MongoClient(uri, {
 	},
 });
 
-// app.use(cors());
 app.use(cors({ origin: `http://localhost:800${PORT.toString().charAt(3)}` }));
+// app.use(cors());
 app.use(express.json());
 app.get('/', (_req, res) => {
 	res.send('Agent is running!');
@@ -45,8 +45,8 @@ async function run() {
 		console.log(
 			'Pinged your deployment. You successfully connected to MongoDB!'
 		);
-
-		const db = client.db('v2grid');
+		const dbName = process.env.DB_NAME || 'v2grid';
+		const db = client.db(dbName);
 		setCellsCollection(db.collection('cells'));
 		setAgentsCollection(db.collection('agents'));
 

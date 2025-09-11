@@ -12,6 +12,7 @@ const router = express.Router();
 const DELAY = process.env.DELAY ? Number(process.env.DELAY) : 100;
 const SIZE = process.env.SIZE ? Number(process.env.SIZE) : 20;
 let isExploring = false;
+let pendingCells: Cell[] = [];
 
 // function randInt(max: number): number {
 // 	return Math.floor(Math.random() * max);
@@ -101,19 +102,28 @@ router.post('/', async (_req: Request, res: Response) => {
 				const nx = x + dx;
 				const ny = y + dy;
 				if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
-					const reserved = await getCellsCollection().findOneAndUpdate(
-						{ x: nx, y: ny, valeur: 0 },
-						{ $inc: { valeur: 1 }, $addToSet: { agents: agentName } },
-						{ returnDocument: 'after' }
-					);
-					if (reserved) {
-						await broadcastExploredCases([reserved]);
-						x = nx;
-						y = ny;
-						foundFrontier = true;
-						console.log(
-							`Agent ${agentName} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
+					try {
+						const reserved = await getCellsCollection().findOneAndUpdate(
+							{ x: nx, y: ny, valeur: 0 },
+							{ $inc: { valeur: 1 }, $addToSet: { agents: agentName } },
+							{ returnDocument: 'after' }
 						);
+						if (reserved) {
+							// await broadcastExploredCases([reserved]);
+							x = nx;
+							y = ny;
+							foundFrontier = true;
+							// pendingCells.push(reserved);
+							console.log(
+								`Agent ${agentName} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
+							);
+							await new Promise(resolve => setTimeout(resolve, DELAY));
+							break;
+						}
+					} catch (error) {
+						console.error('MongoDB error, storing cell locally:', error);
+						// Optionally: store the intended cell update in pendingCells
+						pendingCells.push({ x: nx, y: ny, valeur: 1, agents: [agentName] });
 						await new Promise(resolve => setTimeout(resolve, DELAY));
 						break;
 					}
@@ -136,7 +146,7 @@ router.post('/', async (_req: Request, res: Response) => {
 					{ returnDocument: 'after' }
 				);
 				if (reserved) {
-					await broadcastExploredCases([reserved]);
+					// await broadcastExploredCases([reserved]);
 					x = reserved.x!;
 					y = reserved.y!;
 					console.log(
@@ -159,5 +169,17 @@ router.post('/', async (_req: Request, res: Response) => {
 		isExploring = false;
 	})();
 });
+
+setInterval(async () => {
+	if (pendingCells.length > 0) {
+		try {
+			await getCellsCollection().insertMany(pendingCells, { ordered: false });
+			pendingCells = [];
+			console.log('Pending cells synced to MongoDB!');
+		} catch (err) {
+			console.error('Still cannot sync pending cells:', err);
+		}
+	}
+}, 5000);
 
 export default router;

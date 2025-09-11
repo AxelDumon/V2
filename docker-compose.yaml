@@ -22,119 +22,85 @@
 #---------------------------------------
 
 services:
-  # MongoDB nodes
-  node1:
+  machine1:
     build:
       context: .
-      dockerfile: Dockerfile.mongo
-    container_name: node1
-    hostname: node1
-    command: /entrypoint.sh
-    ports:
-      - "27019:27018"
-    volumes:
-      - node1-data:/data/db
-      - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-    networks:
-      v2_mongo-cluster:
-        aliases:
-          - node1
-
-
-  node2:
-    image: mongo:latest
-    container_name: node2
-    hostname: node2
-    command: mongod --replSet shard1 --port 27018 --bind_ip_all
-    ports:
-      - "27020:27018"
-    volumes:
-      - node2-data:/data/db
-    networks:
-      v2_mongo-cluster:
-        aliases:
-          - node2
-
-  node3:
-    image: mongo:latest
-    container_name: node3
-    hostname: node3
-    command: mongod --replSet shard1 --port 27018 --bind_ip_all
-    ports:
-      - "27021:27018"
-    volumes:
-      - node3-data:/data/db
-    networks:
-      v2_mongo-cluster:
-        aliases:
-          - node3
-
-
-  # Exploration agents
-  agent1:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: agent1
+      dockerfile: Dockerfile.machine
+    container_name: machine1
+    hostname: machine1
     environment:
-      - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      # - MONGO_URI=mongodb://localhost:27018/v2grid?replicaSet=shard1
+      - MONGO_URI=mongodb://machine1:27018,machine2:27018,machine3:27018/?replicaSet=shard1
       - PORT=3001
-      - AGENT_ID=agent1
-      - AGENT_PEERS=http://agent2:3001,http://agent3:3001
+      - DB_NAME=v2grid_machine1
+      - AGENT_ID=machine1
+      - AGENT_PEERS=http://machine2:3002,http://machine3:3003
     ports:
+      - "27018:27018"
       - "3001:3001"
       - "8001:8000"
+    volumes:
+      - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
+      - machine1-data:/data/db
     networks:
-     - v2_mongo-cluster
-    depends_on:
-      - node1
-      - node2
-      - node3
+      v2_mongo-cluster:
+        aliases:
+          - machine1
 
-  agent2:
+  machine2:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: agent2
+      dockerfile: Dockerfile.machine
+    container_name: machine2
+    hostname: machine2
     environment:
-      - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - MONGO_URI=mongodb://machine1:27018,machine2:27018,machine3:27018/?replicaSet=shard1
+      # - MONGO_URI=mongodb://localhost:27018/v2grid?replicaSet=shard1
       - PORT=3002
-      - AGENT_ID=agent2
-      - AGENT_PEERS=http://agent1:3001,http://agent3:3001
+      - DB_NAME=v2grid_machine2
+      - AGENT_ID=machine2
+      - AGENT_PEERS=http://machine1:3001,http://machine3:3003
     ports:
+      - "27019:27018"
       - "3002:3002"
       - "8002:8000"
+    volumes:
+      - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
+      - machine2-data:/data/db
     networks:
-      - v2_mongo-cluster
-    depends_on:
-      - node1
-      - node2
-      - node3
+      v2_mongo-cluster:
+        aliases:
+          - machine2
 
-  agent3:
+  machine3:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: agent3
+      dockerfile: Dockerfile.machine
+    container_name: machine3
+    hostname: machine3
     environment:
-      - MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
+      - MONGO_URI=mongodb://machine1:27018,machine2:27018,machine3:27018/?replicaSet=shard1
+      # - MONGO_URI=mongodb://localhost:27018/v2grid?replicaSet=shard1
       - PORT=3003
-      - AGENT_ID=agent3
-      - AGENT_PEERS=http://agent1:3001,http://agent2:3001
+      - DB_NAME=v2grid_machine3
+      - AGENT_ID=machine3
+      - AGENT_PEERS=http://machine1:3001,http://machine2:3002
     ports:
+      - "27020:27018"
       - "3003:3003"
       - "8003:8000"
+    volumes:
+      - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
+      - machine3-data:/data/db
     networks:
-      - v2_mongo-cluster
-    depends_on:
-      - node1
-      - node2
-      - node3
+      v2_mongo-cluster:
+        aliases:
+          - machine3
 
 volumes:
-  node1-data:
-  node2-data:
-  node3-data:
+  machine1-data:
+  machine2-data:
+  machine3-data:
 
 networks:
   v2_mongo-cluster:
