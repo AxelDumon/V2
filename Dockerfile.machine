@@ -16,7 +16,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install
+RUN npm install && cd server && npm install && tsc
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

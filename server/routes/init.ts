@@ -11,7 +11,7 @@ router.post('/', async (_req, res) => {
 	const bulk = [];
 	for (let i = 0; i < SIZE; i++) {
 		for (let j = 0; j < SIZE; j++) {
-			bulk.push({ x: i, y: j, valeur: 0 });
+			bulk.push({ x: i, y: j, valeur: 0, agents: [] });
 		}
 	}
 	await getCellsCollection().insertMany(bulk);
