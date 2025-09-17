@@ -11,12 +11,13 @@ RUN apt-get update && \
     # systemctl enable mongod && \
     # systemctl start mongod && \
 
-
 WORKDIR /app
 
 COPY . .
 
+RUN npm install -g typescript
 RUN npm install && cd server && npm install && tsc
+
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

@@ -26,7 +26,8 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 const { MongoClient } = await import('mongodb');
 
-app.use(cors({ origin: `http://localhost:800${PORT.toString().charAt(3)}` }));
+// app.use(cors({ origin: `http://localhost:800${PORT.toString().charAt(3)}` }));
+app.use(cors());
 app.use(express.json());
 app.get('/', (_req, res) => {
 	res.send('Agent is running!');
@@ -41,28 +42,18 @@ let client: MongoClientType | null = null;
 let dbReady = false;
 let dbName = process.env.DB_NAME || 'v2grid';
 
+const replicaSetUri = `mongodb://machine1:27018,machine2:27018,machine3:27018/${dbName}?replicaSet=shard1`;
+const directUri = `mongodb://localhost:27018/${dbName}?directConnection=true`;
+
 async function connectMongoDB() {
-	let uri: string;
-	let options: any = {};
-
-	if (currentMode === 'replicaSet') {
-		uri =
-			process.env.REPL_MONGO_URI ||
-			`mongodb://localhost:27018/${dbName}?replicaSet=shard1`;
-		options = { serverApi: { version: '1' } };
-		console.log('Attempting MongoDB replica set connection...');
-	} else {
-		uri = `mongodb://localhost:27018/${dbName}?directConnection=true`;
-		options = {
-			serverApi: { version: '1' },
-		};
-		console.log('Attempting MongoDB direct connection...');
-	}
-
+	let uri = currentMode === 'replicaSet' ? replicaSetUri : directUri;
+	let options: any = { serverApi: { version: '1' } };
+	console.log('Attempting MongoDB connection in', currentMode, 'mode...');
 	try {
+		if (client) await client.close();
 		client = new MongoClient(uri, options);
 		await client.connect();
-		await client.db('admin').command({ ping: 1 });
+		await safePing(client);
 		console.log(`Connected to MongoDB (${currentMode})`);
 		dbReady = true;
 		return client;
@@ -76,7 +67,7 @@ async function connectMongoDB() {
 async function initDBAndStartServer() {
 	let initialized = false;
 	let retryDelay = 2000;
-	const maxDelay = 60000;
+	const maxDelay = 8000;
 
 	while (!initialized) {
 		try {
@@ -84,39 +75,65 @@ async function initDBAndStartServer() {
 			if (!dbReady || !client) throw new Error('Database not ready');
 			const db = client.db(dbName);
 
-			client.on('close', () => {
-				console.log(
-					'MongoDB connection closed, switching to direct connection...'
-				);
-				dbReady = false;
-				currentMode = 'direct';
-				connectMongoDB();
-			});
-			client.on('error', err => {
-				console.error('MongoDB connection error:', err);
-				dbReady = false;
-				currentMode = 'direct';
-				connectMongoDB();
-			});
-
 			setInterval(async () => {
-				if (currentMode === 'replicaSet') {
-					try {
-						if (client) await safePing(client);
-					} catch (err) {
-						// Switch to direct mode if ping fails
+				try {
+					// console.log('Pinging MongoDB to check state...');
+					// if (client) {
+					// 	await safePing(client);
+					// }
+					if (client) {
+						const status = await client
+							.db('admin')
+							.command({ replSetGetStatus: 1 });
+						const unhealthy = status.members.some(
+							(m: { health: number; stateStr: string }) =>
+								m.health !== 1 ||
+								m.stateStr === 'UNKNOWN' ||
+								m.stateStr === 'DOWN'
+						);
+						if (unhealthy) {
+							throw new Error('Replica set unhealthy');
+						}
+						console.log(
+							'Replica set healthy:',
+							status.members
+								.map(
+									(m: { name: any; stateStr: any }) =>
+										`${m.name} (${m.stateStr})`
+								)
+								.join(', ')
+						);
+					}
+				} catch (err) {
+					dbReady = false;
+					if (currentMode === 'replicaSet') {
+						console.log(
+							'Replica set unreachable or unhealthy, switching to direct connection mode.'
+						);
 						currentMode = 'direct';
 						await connectMongoDB();
-					}
-				} else {
-					// In direct mode, periodically check if replica set is reachable
-					const isReplicaUp = await healthCheckReplicaSet();
-					if (isReplicaUp) {
-						currentMode = 'replicaSet';
-						await connectMongoDB();
+						if (client) {
+							const db = client.db(dbName);
+							setCellsCollection(db.collection('cells'));
+							setAgentsCollection(db.collection('agents'));
+						}
 					}
 				}
-			}, 5000);
+
+				if (currentMode === 'direct') {
+					const isReplicaUp = await healthCheckReplicaSet();
+					if (isReplicaUp) {
+						console.log('Replica set is back, switching to replica set mode!');
+						currentMode = 'replicaSet';
+						await connectMongoDB();
+						if (client) {
+							const db = client.db(dbName);
+							setCellsCollection(db.collection('cells'));
+							setAgentsCollection(db.collection('agents'));
+						}
+					}
+				}
+			}, 4000);
 
 			setCellsCollection(db.collection('cells'));
 			setAgentsCollection(db.collection('agents'));
@@ -166,13 +183,15 @@ async function safePing(client: MongoClientType, timeout = 2000) {
 
 async function healthCheckReplicaSet() {
 	try {
-		const testClient = new MongoClient(process.env.REPL_MONGO_URI!, {
+		const testClient = new MongoClient(replicaSetUri, {
 			serverApi: { version: '1' },
 		});
 		await testClient.connect();
-		await testClient.db('admin').command({ ping: 1 });
+		const status = await testClient
+			.db('admin')
+			.command({ replSetGetStatus: 1 });
 		await testClient.close();
-		return true;
+		return status.members.every((m: { health: number }) => m.health === 1);
 	} catch {
 		return false;
 	}

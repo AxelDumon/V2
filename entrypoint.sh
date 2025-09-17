@@ -1,7 +1,10 @@
 #!/bin/bash
 # filepath: /home/axeldumon/Code/V2/entrypoint.sh
 
+echo "[entrypoint] Starting MongoDB instance..."
+
 mongod --replSet shard1 --port 27018 --bind_ip_all --dbpath /data/db &
+# mongod --replSet shard1 --port 27018 --bind_ip machine1,machine2,machine3 --dbpath /data/db &
 # --fork
 
 sleep 10
@@ -13,7 +16,11 @@ for host in machine2 machine3; do
   done
 done
 
+echo "[entrypoint] Each host is reachable on port 27018."
+
 mongosh --port 27018 /docker-entrypoint-initdb.d/init-replica.js || true
+
+echo "[entrypoint] Replica set initiation script executed."
 
 npm run dev
 

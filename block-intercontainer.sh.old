@@ -1,0 +1,31 @@
+#!/bin/bash
+# Block traffic between machine1, machine2, machine3 on v2_default network
+
+machines=("machine1" "machine2" "machine3")
+ips=()
+
+# Resolve IPs for each machine
+for m in "${machines[@]}"; do
+    # ip=$(getent hosts "$m" | awk '{print $1}' | head -n 1)
+    ip=$(podman inspect -f '{{.NetworkSettings.Networks.v2_default.IPAddress}}' "$m")
+    if [ -z "$ip" ]; then
+        echo "Could not resolve IP for $m"
+        exit 1
+    fi
+    ips+=("$ip")
+done
+
+# Block traffic between each pair
+for ((i=0; i<${#ips[@]}; i++)); do
+    for ((j=i+1; j<${#ips[@]}; j++)); do
+        echo "Blocking traffic between ${machines[i]} (${ips[i]}) and ${machines[j]} (${ips[j]})"
+        sudo iptables -I FORWARD -s "${ips[i]}" -d "${ips[j]}" -j DROP
+        sudo iptables -I FORWARD -s "${ips[j]}" -d "${ips[i]}" -j DROP
+    done
+done
+
+echo "Inter-container traffic blocked on v2_default network."
+
+# To unblock, run:
+# sudo iptables -F FORWARD
+# (This will flush all rules in the FORWARD chain)

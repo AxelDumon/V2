@@ -5,5 +5,5 @@ rs.initiate({
     { _id: 1, host: "machine2:27018" },
     { _id: 2, host: "machine3:27018" }
   ],
-  settings: { electionTimeoutMillis: 2000, heartbeatTimeoutSecs: 1}
+  settings: {}
 })
