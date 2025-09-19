@@ -42,11 +42,18 @@ let client: MongoClientType | null = null;
 let dbReady = false;
 let dbName = process.env.DB_NAME || 'v2grid';
 
-const replicaSetUri = `mongodb://machine1:27018,machine2:27018,machine3:27018/${dbName}?replicaSet=shard1`;
-const directUri = `mongodb://localhost:27018/${dbName}?directConnection=true`;
+// const replicaSetUri = `mongodb://machine1:27018,machine2:27018,machine3:27018/${dbName}?replicaSet=shard1`;
+// const directUri = `mongodb://localhost:27018/${dbName}?directConnection=true`;
+const replicaSetUri = process.env.REPL_MONGO_URI;
+const directUri = process.env.MONGO_URI + "?directConnection=true";
+
+if (!replicaSetUri || !directUri) {
+	console.error('MONGO_URI and REPL_MONGO_URI must be set in environment.');
+	process.exit(1);
+}
 
 async function connectMongoDB() {
-	let uri = currentMode === 'replicaSet' ? replicaSetUri : directUri;
+	let uri = currentMode === 'replicaSet' ? replicaSetUri! : directUri!;
 	let options: any = { serverApi: { version: '1' } };
 	console.log('Attempting MongoDB connection in', currentMode, 'mode...');
 	try {
@@ -183,7 +190,7 @@ async function safePing(client: MongoClientType, timeout = 2000) {
 
 async function healthCheckReplicaSet() {
 	try {
-		const testClient = new MongoClient(replicaSetUri, {
+		const testClient = new MongoClient(replicaSetUri!, {
 			serverApi: { version: '1' },
 		});
 		await testClient.connect();

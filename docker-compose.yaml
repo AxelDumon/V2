@@ -28,18 +28,17 @@ services:
       dockerfile: Dockerfile.machine
     container_name: machine1
     hostname: machine1
-    # FOR TESTING WITH PING
     cap_add:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://localhost:27018/v2grid
-      - REPL_MONGO_URI=mongodb://machine1:27018,machine2:27018,machine3:27018/v2grid?replicaSet=shard1
+      - MONGO_URI=mongodb://10.89.2.11:27018/v2grid 
+      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018/v2grid?replicaSet=shard1
       - PORT=3001
       - DB_NAME=v2grid
       - AGENT_ID=machine1
       - AGENT_NAME=machine1
-      - AGENT_PEERS=http://machine2:3002,http://machine3:3003
+      - AGENT_PEERS=http://10.89.2.12:3002,http://10.89.2.13:3003
     ports:
       - "27018:27018"
       - "3001:3001"
@@ -49,8 +48,9 @@ services:
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
       - machine1-data:/data/db
     networks:
-      default: {}
+      # default: {}
       mongo-cluster:
+        ipv4_address: 10.89.2.11
         aliases:
           - machine1
 
@@ -65,13 +65,13 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://localhost:27018/v2grid
-      - REPL_MONGO_URI=mongodb://machine1:27018,machine2:27018,machine3:27018/v2grid?replicaSet=shard1
+      - MONGO_URI=mongodb://10.89.2.12:27018/v2grid 
+      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018/v2grid?replicaSet=shard1
       - PORT=3002
       - DB_NAME=v2grid
       - AGENT_ID=machine2
       - AGENT_NAME=machine2
-      - AGENT_PEERS=http://machine1:3001,http://machine3:3003
+      - AGENT_PEERS=http://10.89.2.11:3001,http://10.89.2.13:3003
     ports:
       - "27019:27018"
       - "3002:3002"
@@ -81,8 +81,9 @@ services:
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
       - machine2-data:/data/db
     networks:
-      default: {}
+      # default: {}
       mongo-cluster:
+        ipv4_address: 10.89.2.12
         aliases:
           - machine2
 
@@ -97,13 +98,13 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://localhost:27018/v2grid
-      - REPL_MONGO_URI=mongodb://machine1:27018,machine2:27018,machine3:27018/v2grid?replicaSet=shard1
+      - MONGO_URI=mongodb://10.89.2.13:27018/v2grid 
+      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018/v2grid?replicaSet=shard1
       - PORT=3003
       - DB_NAME=v2grid
       - AGENT_ID=machine3
       - AGENT_NAME=machine3
-      - AGENT_PEERS=http://machine1:3001,http://machine2:3002
+      - AGENT_PEERS=http://10.89.2.11:3001,http://10.89.2.12:3002
     ports:
       - "27020:27018"
       - "3003:3003"
@@ -113,8 +114,9 @@ services:
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
       - machine3-data:/data/db
     networks:
-      default: {}
+      # default: {}
       mongo-cluster:
+        ipv4_address: 10.89.2.13
         aliases:
           - machine3
 
@@ -126,8 +128,11 @@ volumes:
 networks:
   mongo-cluster:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.89.2.0/24
     # internal: true
 
-  default:
-    driver: bridge
+  # default:
+  #   driver: bridge
     # enable_icc: false # Disable inter-container communication by default (doesn't work with podman)

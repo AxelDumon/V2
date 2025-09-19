@@ -1,7 +1,7 @@
 FROM node:20
 
 RUN apt-get update && \
-    apt-get install -y gnupg curl netcat-traditional systemctl && \
+    apt-get install -y gnupg curl netcat-traditional systemctl iputils-ping && \
     curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
     gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg && \
     echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list && \
@@ -16,6 +16,7 @@ WORKDIR /app
 COPY . .
 
 RUN npm install -g typescript
+RUN npm install -g concurrently
 RUN npm install && cd server && npm install && tsc
 
 
