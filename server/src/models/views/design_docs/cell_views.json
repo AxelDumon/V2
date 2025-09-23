@@ -1,0 +1,8 @@
+{
+    "_id": "_design/cell_views",
+    "views": {
+      "count_by_agent": {
+        "map": "function (doc) { if (doc.agents) emit(doc.agents, doc); }"
+      }
+    }
+  }

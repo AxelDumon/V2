@@ -1,26 +1,3 @@
-# MONGO avec un shard de 3 noeuds
-# 
-# Auteur : P Mathieu
-# Date   : 20/08/2021
-#
-# Pour le lancer
-# docker-compose up -d
-
-# Pour s'y connecter
-# docker exec -it node1  mongosh --port 27018
-# docker exec -it node2  mongosh --port 27018
-
-# Pour arrêter
-# docker-compose down -v
-
-
-# ATTENTION, par defaut
-# mongod , mongos servent sur 27017
-# un shardsrv sert sur le port 27018
-# un configSvr sert sur le port 27019
-
-#---------------------------------------
-
 services:
   machine1:
     build:
@@ -31,25 +8,24 @@ services:
     cap_add:
       - IPC_LOCK
       - NET_RAW
+    env_file:
+      - .env
     environment:
-      - MONGO_URI=mongodb://10.89.2.11:27018/v2grid 
-      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018/v2grid?replicaSet=shard1
+      - URI=mongodb://10.89.2.11:5984/v2grid 
       - PORT=3001
-      - DB_NAME=v2grid
-      - AGENT_ID=machine1
       - AGENT_NAME=machine1
       - AGENT_PEERS=http://10.89.2.12:3002,http://10.89.2.13:3003
     ports:
-      - "27018:27018"
+      - "5984:5984"
       - "3001:3001"
       - "8001:8000"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-      - machine1-data:/data/db
+      - machine1-data:/opt/couchdb/data
     networks:
       # default: {}
-      mongo-cluster:
+      machine-cluster:
         ipv4_address: 10.89.2.11
         aliases:
           - machine1
@@ -65,24 +41,21 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://10.89.2.12:27018/v2grid 
-      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018/v2grid?replicaSet=shard1
+      - URI=mongodb://10.89.2.12:5984/v2grid 
       - PORT=3002
-      - DB_NAME=v2grid
-      - AGENT_ID=machine2
       - AGENT_NAME=machine2
       - AGENT_PEERS=http://10.89.2.11:3001,http://10.89.2.13:3003
     ports:
-      - "27019:27018"
+      - "5985:5984"
       - "3002:3002"
       - "8002:8000"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-      - machine2-data:/data/db
+      - machine2-data:/opt/couchdb/data
     networks:
       # default: {}
-      mongo-cluster:
+      machine-cluster:
         ipv4_address: 10.89.2.12
         aliases:
           - machine2
@@ -98,24 +71,21 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://10.89.2.13:27018/v2grid 
-      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018/v2grid?replicaSet=shard1
+      - URI=mongodb://10.89.2.13:5984/v2grid 
       - PORT=3003
-      - DB_NAME=v2grid
-      - AGENT_ID=machine3
       - AGENT_NAME=machine3
       - AGENT_PEERS=http://10.89.2.11:3001,http://10.89.2.12:3002
     ports:
-      - "27020:27018"
+      - "5986:5984"
       - "3003:3003"
       - "8003:8000"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-      - machine3-data:/data/db
+      - machine3-data:/opt/couchdb/data
     networks:
       # default: {}
-      mongo-cluster:
+      machine-cluster:
         ipv4_address: 10.89.2.13
         aliases:
           - machine3
@@ -126,7 +96,7 @@ volumes:
   machine3-data:
 
 networks:
-  mongo-cluster:
+  machine-cluster:
     driver: bridge
     ipam:
       config:

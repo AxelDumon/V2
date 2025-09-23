@@ -1,24 +1,32 @@
+# Stage 1: CouchDB
+FROM docker.io/apache/couchdb:3.3.2 AS couchdb
+
+# Stage 2: Node.js
 FROM node:20
 
-RUN apt-get update && \
-    apt-get install -y gnupg curl netcat-traditional systemctl iputils-ping && \
-    curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
-    gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg && \
-    echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list && \
-    apt-get update && \
-    apt-get install -y mongodb-org && \
-    rm -rf /var/lib/apt/lists/*
-    # systemctl enable mongod && \
-    # systemctl start mongod && \
+# Set the Erlang magic cookie
+ENV COUCHDB_ERL_COOKIE="8zplQ4cMBYma4y6"
+
+# Copy CouchDB binaries and dependencies from the first stage
+COPY --from=couchdb /opt/couchdb /opt/couchdb
+COPY --from=couchdb /etc/couchdb /etc/couchdb
+COPY --from=couchdb /usr/lib /usr/lib
+COPY --from=couchdb /usr/bin /usr/bin
+COPY --from=couchdb /opt/couchdb/data /opt/couchdb/data
+COPY --from=couchdb /opt/couchdb/var/log /opt/couchdb/var/log
 
 WORKDIR /app
-
 COPY . .
 
-RUN npm install -g typescript
-RUN npm install -g concurrently
-RUN npm install && cd server && npm install && tsc
-
+# Install Node.js dependencies
+RUN apt update && apt install -y curl gnupg apt-transport-https procps && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt install -y nodejs && \
+    wget http://ftp.de.debian.org/debian/pool/main/p/procps/libprocps8_3.3.17-5_amd64.deb && \
+    dpkg -i libprocps8_3.3.17-5_amd64.deb && \
+    npm install -g typescript concurrently && \
+    npm install && cd server && npm install && tsc && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

@@ -20,6 +20,6 @@
     "noFallthroughCasesInSwitch": true,
     // "noUncheckedSideEffectImports": true
   },
-  "include": ["models/**/*", "routes/**/*", "index.ts"],
+  "include": ["src/app.ts", "src/**/*.ts"],
   "exclude": ["node_modules", "build"]
 }

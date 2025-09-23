@@ -1,0 +1,70 @@
+import { DesignDoc } from './types';
+
+const COUCHDB_URL = process.env.URI || 'http://127.0.0.1:5984';
+const DB_NAME = process.env.DB_NAME || 'v2grid';
+const AUTH_HEADER =
+	'Basic ' +
+	Buffer.from(
+		`${process.env.COUCHDB_USER}:${process.env.COUCHDB_PASSWORD}`
+	).toString('base64');
+
+export async function uploadDesignDoc(designDoc: DesignDoc) {
+	const url = `${COUCHDB_URL}/${DB_NAME}/${designDoc._id}`;
+	try {
+		// Check if the design document already exists
+		const existingDoc = await fetch(url, {
+			method: 'GET',
+			headers: { Authorization: AUTH_HEADER },
+		});
+
+		if (existingDoc.ok) {
+			const existingData = await existingDoc.json();
+			designDoc._rev = existingData._rev; // Add the revision ID to update the document
+		}
+
+		// Upload the design document
+		const response = await fetch(url, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: AUTH_HEADER,
+			},
+			body: JSON.stringify(designDoc),
+		});
+
+		if (!response.ok) {
+			throw new Error(
+				`Failed to upload design document: ${response.statusText}`
+			);
+		}
+
+		console.log(`Design document uploaded: ${designDoc._id}`);
+	} catch (error) {
+		console.error('Error uploading design document:', error);
+	}
+}
+
+export async function queryView(
+	viewName: string,
+	params: Record<string, string> = {}
+) {
+	const query = new URLSearchParams(params).toString();
+	const url = `${COUCHDB_URL}/${DB_NAME}/_design/example/_view/${viewName}?${query}`;
+
+	try {
+		const response = await fetch(url, {
+			method: 'GET',
+			headers: { Authorization: AUTH_HEADER },
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to query view: ${response.statusText}`);
+		}
+
+		const data = await response.json();
+		return data.rows;
+	} catch (error) {
+		console.error('Error querying view:', error);
+		return [];
+	}
+}
