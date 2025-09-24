@@ -8,6 +8,12 @@ echo "[entrypoint] Configuring CouchDB's admin..."
 echo "[admins]" >> /opt/couchdb/etc/local.ini
 echo "admin = password" >> /opt/couchdb/etc/local.ini
 
+echo "\n" >> /opt/couchdb/etc/local.ini
+
+echo "[entrypoint] Configuring CouchDB for clustering..."
+echo "[cluster]" >> /opt/couchdb/etc/local.ini
+echo "q = 1" >> /opt/couchdb/etc/local.ini
+echo "n = 1" >> /opt/couchdb/etc/local.ini
 
 echo "[entrypoint] Pre-start: Initializing CouchDB system databases..."
 /opt/couchdb/bin/couchdb -n &

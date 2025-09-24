@@ -1,6 +1,6 @@
 // import { CouchDB } from '../utils/CouchDB';
 
-import { CouchDB } from '../utils/CouchDB';
+import { CouchDB } from '../utils/CouchDB.js';
 
 export type Cell = {
 	x: number;

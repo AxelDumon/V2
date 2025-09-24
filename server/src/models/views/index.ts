@@ -1,14 +1,12 @@
-// Upload all design documents on startup
-// (async () => {
-// 	for (const [name, designDoc] of Object.entries(designDocs)) {
-// 		console.log(`Uploading design document: ${name}`);
-// 		await CouchDB.uploadDesignDoc(designDoc);
-// 	}
-// })();
-export type DesignDocs = Record<string, DesignDoc>;
 import fs from 'fs';
 import path from 'path';
 import { DesignDoc } from '../../utils/types';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export type DesignDocs = Record<string, DesignDoc>;
 
 const designDocs: DesignDocs = {};
 
@@ -16,12 +14,23 @@ const designDocs: DesignDocs = {};
 const designDocsPath = path.join(__dirname, 'design_docs');
 
 // Read all files in the design_docs folder
-fs.readdirSync(designDocsPath).forEach(file => {
-	if (file.endsWith('.json')) {
-		const docName = path.basename(file, '.json'); // Use the file name (without extension) as the key
-		const docPath = path.join(designDocsPath, file);
-		designDocs[docName] = require(docPath); // Dynamically require the JSON file
+async function loadDesigndocs() {
+	const files = fs.readdirSync(designDocsPath);
+	for (const file of files) {
+		if (file.endsWith('.json')) {
+			const docName = path.basename(file, '.json'); // Use the file name (without extension) as the key
+			const docPath = path.join(designDocsPath, file);
+			const designDoc = await import(docPath, { assert: { type: 'json' } });
+
+			if (!designDoc.default._id) {
+				designDoc.default._id = `_design/${docName}`;
+			}
+
+			designDocs[docName] = designDoc.default; // Dynamically require the JSON file
+		}
 	}
-});
+}
+
+await loadDesigndocs();
 
 export default designDocs;

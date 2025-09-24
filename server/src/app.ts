@@ -36,10 +36,10 @@ app.get('/', (_req, res) => {
 
 // let dbName = process.env.DB_NAME || 'v2grid';
 
-const user = process.env.COUCHDB_USER;
-const password = process.env.COUCHDB_PASSWORD;
-export const authHeader =
-	'Basic ' + Buffer.from(`${user}:${password}`).toString('base64');
+// const user = process.env.COUCHDB_USER;
+// const password = process.env.COUCHDB_PASSWORD;
+// export const authHeader =
+// 	'Basic ' + Buffer.from(`${user}:${password}`).toString('base64');
 
 // const url = `http://127.0.0.1:5984/${dbName}`;
 
@@ -48,13 +48,16 @@ async function initDBAndStartServer() {
 	let retryDelay = 2000;
 	const maxDelay = 8000;
 
+	console.log('Creating database...');
 	await CouchDB.createDatabase().catch(err => {
 		console.error('Error creating database:', err);
 	});
+	console.log('Database created or already exists.');
 
 	while (!initialized) {
 		try {
 			// const SIZE = process.env.SIZE ? Number(process.env.SIZE) : 20;
+			// Init grid if empty
 			const count = await countCells();
 			if (count === 0) {
 				await initGrid();
@@ -62,6 +65,14 @@ async function initDBAndStartServer() {
 				console.log(`Grille déjà initialisée (${count} cases)`);
 			}
 
+			// Upload design documents
+			const docs: DesignDocs = designDocs;
+			for (const [name, designDoc] of Object.entries(docs)) {
+				console.log(`Uploading design document: ${name}`);
+				await CouchDB.uploadDesignDoc(designDoc);
+			}
+
+			// Start the server
 			app.listen(PORT, '0.0.0.0', () => {
 				console.log(`Serveur lancé sur le port ${PORT}`);
 			});
@@ -79,18 +90,6 @@ async function initDBAndStartServer() {
 		}
 	}
 }
-
-initDBAndStartServer().catch(console.dir);
-
-// Upload the design document on startup
-(async () => {
-	const docs: DesignDocs = designDocs;
-
-	for (const [name, designDoc] of Object.entries(docs)) {
-		console.log(`Uploading design document: ${name}`);
-		await CouchDB.uploadDesignDoc(designDoc);
-	}
-})();
 
 // Routes
 app.get('/api/view/by_value', async (req, res) => {
@@ -113,7 +112,4 @@ app.get('/api/view/by_coordinates', async (req, res) => {
 	}
 });
 
-// Start the server
-app.listen(PORT, () => {
-	console.log(`Server running on port ${PORT}`);
-});
+initDBAndStartServer().catch(console.dir);
