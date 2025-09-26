@@ -4,7 +4,7 @@ import { AgentStat } from '../type';
 
 const SIZE = Number(import.meta.env.VITE_SIZE);
 const DELAY = Number(import.meta.env.VITE_DELAY);
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = 'http://localhost:' + (import.meta.env.PORT || '3001');
 
 export default function App() {
 	const [tab, setTab] = useState<any[][]>(() =>
@@ -35,20 +35,24 @@ export default function App() {
 		setTab(newTab);
 	}
 
-	async function triggerExploration() {
-		// setExploring(true);
-		await fetch(`${API_URL}/api/explore`, { method: 'POST' });
+	async function startFetchingDate() {
 		if (!intervalRef.current) {
 			intervalRef.current = window.setInterval(async () => {
 				await fetchCells();
 				await fetchAgentStats();
+				// Check if all cells are explored
 				if (tab.flat().filter(c => c === 0).length === 0) {
-					// setExploring(false);
 					clearInterval(intervalRef.current!);
 					intervalRef.current = null;
 				}
 			}, DELAY);
 		}
+	}
+
+	async function triggerExploration() {
+		// setExploring(true);
+		await fetch(`${API_URL}/api/explore`, { method: 'POST' });
+		startFetchingDate();
 	}
 
 	async function clearGrid() {
@@ -65,10 +69,7 @@ export default function App() {
 	useEffect(() => {
 		fetchAgentStats();
 		fetchCells();
-		intervalRef.current = window.setInterval(async () => {
-			await fetchCells();
-			await fetchAgentStats();
-		}, DELAY);
+		startFetchingDate();
 		return () => {
 			if (intervalRef.current) {
 				clearInterval(intervalRef.current);

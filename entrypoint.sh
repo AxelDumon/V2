@@ -10,6 +10,7 @@ echo "admin = password" >> /opt/couchdb/etc/local.ini
 
 echo "\n" >> /opt/couchdb/etc/local.ini
 
+# https://docs.couchdb.org/en/stable/config/cluster.html
 echo "[entrypoint] Configuring CouchDB for clustering..."
 echo "[cluster]" >> /opt/couchdb/etc/local.ini
 echo "q = 1" >> /opt/couchdb/etc/local.ini
@@ -22,7 +23,7 @@ echo "[entrypoint] Pre-start: Initializing CouchDB system databases..."
 echo "[entrypoint] Waiting for CouchDB to be ready..."
 until curl -X GET 'http://127.0.0.1:5984/_up'; do
   echo "Waiting for CouchDB to be ready..."
-  sleep 2
+  sleep 3
 done
 echo "[entrypoint] CouchDB is ready."
 
@@ -38,7 +39,13 @@ echo "[entrypoint] Stopping CouchDB foreground process..."
 pkill -f "/opt/couchdb/bin/couchdb -n"
 
 echo "[entrypoint] Starting CouchDB instance..."
-/opt/couchdb/bin/couchdb &
+if pgrep -x "beam.smp" > /dev/null; then
+  echo "[entrypoint] CouchDB is already running. Skipping start."
+else
+  echo "[entrypoint] Starting CouchDB..."
+  /opt/couchdb/bin/couchdb &
+fi
+# /opt/couchdb/bin/couchdb &
 
 # for host in machine2 machine3; do
 # echo "[entrypoint] Waiting for all MongoDB nodes to be ready..."
