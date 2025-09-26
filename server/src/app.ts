@@ -1,6 +1,29 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { WebSocketServer } from 'ws';
+
+const wss = new WebSocketServer({
+	port: Number('808' + process.env.PORT?.charAt(3)),
+});
+wss.on('connection', ws => {
+	console.log('[WSS] Client connected');
+	ws.onopen = () => {
+		console.log('Connected to WebSocket server');
+	};
+	ws.on('message', message => {
+		console.log('Received message:', message.toString());
+	});
+	ws.on('close', () => {
+		console.log('Client disconnected');
+	});
+	ws.on('error', error => {
+		console.error('WebSocket error:', error);
+	});
+});
+
+export default wss;
+
 import express from 'express';
 import cors from 'cors';
 import { CouchDB } from './utils/CouchDB.js';

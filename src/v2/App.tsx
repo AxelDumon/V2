@@ -3,8 +3,11 @@ import Grid from './Grid';
 import { AgentStat } from '../type';
 
 const SIZE = Number(import.meta.env.VITE_SIZE);
-const DELAY = Number(import.meta.env.VITE_DELAY);
-const API_URL = 'http://localhost:' + (import.meta.env.PORT || '3001');
+// const DELAY = Number(import.meta.env.VITE_DELAY);
+const PORT = import.meta.env.VITE_PORT || '3001';
+console.log('PORT:', PORT);
+const API_URL = 'http://localhost:' + PORT;
+const WS_URL = 'ws://localhost:808' + PORT.toString().charAt(3);
 
 export default function App() {
 	const [tab, setTab] = useState<any[][]>(() =>
@@ -35,24 +38,26 @@ export default function App() {
 		setTab(newTab);
 	}
 
-	async function startFetchingDate() {
-		if (!intervalRef.current) {
-			intervalRef.current = window.setInterval(async () => {
-				await fetchCells();
-				await fetchAgentStats();
-				// Check if all cells are explored
-				if (tab.flat().filter(c => c === 0).length === 0) {
-					clearInterval(intervalRef.current!);
-					intervalRef.current = null;
-				}
-			}, DELAY);
-		}
-	}
+	// async function startFetchingDate() {
+	// 	if (!intervalRef.current) {
+	// 		intervalRef.current = window.setInterval(async () => {
+	// 			await fetchCells();
+	// 			await fetchAgentStats();
+	// 			// Check if all cells are explored
+	// 			if (tab.flat().filter(c => c === 0).length === 0) {
+	// 				clearInterval(intervalRef.current!);
+	// 				intervalRef.current = null;
+	// 			}
+	// 		}, DELAY);
+	// 	}
+	// }
 
 	async function triggerExploration() {
 		// setExploring(true);
+		fetchCells();
+		fetchAgentStats();
 		await fetch(`${API_URL}/api/explore`, { method: 'POST' });
-		startFetchingDate();
+		// startFetchingDate();
 	}
 
 	async function clearGrid() {
@@ -67,14 +72,49 @@ export default function App() {
 	}
 
 	useEffect(() => {
-		fetchAgentStats();
-		fetchCells();
-		startFetchingDate();
-		return () => {
-			if (intervalRef.current) {
-				clearInterval(intervalRef.current);
+		// Connect to the WebSocket server
+		const ws = new WebSocket(WS_URL);
+
+		ws.onopen = () => {
+			console.log('Connected to WebSocket server');
+		};
+
+		ws.onmessage = event => {
+			const message: {
+				type: 'cell_update' | 'agent_stats_update';
+				data: any;
+			} = JSON.parse(event.data);
+
+			if (message.type == 'cell_update') {
+				const cell = message.data;
+				setTab(prevTab => {
+					const newTab = prevTab.map(row => row.slice());
+					newTab[cell.x][cell.y] = {
+						valeur: cell.valeur || 0,
+						agents: cell.agents || [],
+					};
+					return newTab;
+				});
+			} else if (message.type == 'agent_stats_update') {
+				setAgentStats(message.data);
 			}
 		};
+
+		ws.onclose = () => {
+			console.log('Disconnected from WebSocket server');
+		};
+
+		return () => {
+			ws.close();
+		};
+		// fetchAgentStats();
+		// fetchCells();
+		// startFetchingDate();
+		// return () => {
+		// 	if (intervalRef.current) {
+		// 		clearInterval(intervalRef.current);
+		// 	}
+		// };
 	}, []);
 
 	return (

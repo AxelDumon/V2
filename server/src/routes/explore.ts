@@ -9,6 +9,7 @@ import { CellService } from '../models/CellService.js';
 import Agent from '../models/Agent.js';
 import { Cell } from '../utils/types.js';
 import { shuffle } from '../utils/util.js';
+import { onAgentStatsUpdated, onCellReserved } from '../utils/WebSocket.js';
 
 const router = express.Router();
 const DELAY = process.env.DELAY ? Number(process.env.DELAY) : 100;
@@ -125,6 +126,9 @@ router.post('/', async (_req: Request, res: Response) => {
 								console.log(
 									`Agent ${agentName} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
 								);
+
+								onCellReserved(reserved);
+
 								await new Promise(resolve => setTimeout(resolve, DELAY));
 
 								foundFrontier = true;
@@ -193,6 +197,8 @@ router.post('/', async (_req: Request, res: Response) => {
 						console.log(
 							`Agent ${agentName} teleports to cell (${x}, ${y}), value: ${reserved.valeur}`
 						);
+
+						onCellReserved(reserved);
 						await new Promise(resolve => setTimeout(resolve, DELAY));
 					}
 				} catch (error) {
@@ -207,6 +213,10 @@ router.post('/', async (_req: Request, res: Response) => {
 		const endTime = Date.now();
 		// try {
 		Agent.updateExploringTime(false);
+
+		const stats = await Agent.getAgentStatsWithDuration();
+		onAgentStatsUpdated(stats);
+
 		// await getAgentsCollection().updateOne(
 		// 	{ name: agentName },
 		// 	{ $set: { endTime: new Date() } }
