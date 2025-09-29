@@ -66,18 +66,22 @@ export default class Agent {
 				{ include_docs: 'true' },
 				[Agent.agentName]
 			);
-			if (queryResult.total_rows > 0) {
+			if (queryResult.total_rows > 0 && queryResult.rows[0].doc) {
 				const agentDoc = queryResult.rows[0].doc as AgentDocument;
 				if (isStart) agentDoc.startTime = new Date().toISOString();
 				else agentDoc.endTime = new Date().toISOString();
 
 				return await CouchDB.updateDocument(agentDoc);
 			} else {
+				console.warn(
+					`Agent document not found for name: ${Agent.agentName}. Creating a new document.`
+				);
 				const newAgent: AgentDocument = {
 					_id: `${Agent.agentName}`,
 					type: 'agent',
 					name: Agent.agentName,
-					startTime: new Date().toISOString(),
+					startTime: isStart ? new Date().toISOString() : undefined,
+					endTime: !isStart ? new Date().toISOString() : undefined,
 				};
 				return await CouchDB.createDocument(newAgent);
 			}

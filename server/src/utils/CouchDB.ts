@@ -1,9 +1,17 @@
 import { DesignDoc, Document } from './types';
 
 import dotenv from 'dotenv';
+import { onReplicationUpdate } from './WebSocket.js';
 dotenv.config();
 
 export class CouchDB {
+	public static dbUrl: string = `http://127.0.0.1:5984/${process.env.DB_NAME}`;
+	public static authHeader: string =
+		'Basic ' +
+		Buffer.from(
+			`${process.env.COUCHDB_USER}:${process.env.COUCHDB_PASSWORD}`
+		).toString('base64');
+
 	static async bulkDocs(
 		bulkDelete: { _id: string; _rev: string | undefined; _deleted: boolean }[]
 	) {
@@ -32,12 +40,6 @@ export class CouchDB {
 				throw error;
 			});
 	}
-	public static dbUrl: string = `http://127.0.0.1:5984/${process.env.DB_NAME}`;
-	public static authHeader: string =
-		'Basic ' +
-		Buffer.from(
-			`${process.env.COUCHDB_USER}:${process.env.COUCHDB_PASSWORD}`
-		).toString('base64');
 
 	static async createDatabase(): Promise<void> {
 		console.log('Attempting to create database at:', CouchDB.dbUrl);
@@ -56,6 +58,55 @@ export class CouchDB {
 				`Failed to create database: ${response.statusText} - ${errorText}`
 			);
 			throw new Error(`Failed to create database: ${response.statusText}`);
+		}
+	}
+
+	static async monitorReplication() {
+		const url =
+			'http://127.0.0.1:5984/_replicator/_changes?feed=continuous&include_docs=true';
+
+		try {
+			const response = await fetch(url, {
+				headers: { Authorization: CouchDB.authHeader },
+			});
+			const reader = response.body?.getReader();
+
+			if (!reader) {
+				console.error('Failed to read replication changes feed');
+				return;
+			}
+
+			console.log('[CouchDB] Monitoring replication changes...');
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				// Decode the raw response
+				const rawData = new TextDecoder().decode(value);
+				console.log('[CouchDB] Raw data from _changes feed:', rawData);
+
+				// Parse each line of the response
+				const lines = rawData.split('\n').filter(line => line.trim() !== '');
+				for (const line of lines) {
+					try {
+						const change = JSON.parse(line);
+						if (change.doc && change.doc._replication_state === 'completed') {
+							console.log('[CouchDB] Replication completed:', change.doc);
+							onReplicationUpdate(change.doc); // Notify WebSocket clients
+						}
+					} catch (parseError) {
+						console.error('[CouchDB] Error parsing line:', line, parseError);
+					}
+				}
+
+				// const change = JSON.parse(new TextDecoder().decode(value));
+				// if (change.doc && change.doc._replication_state === 'completed') {
+				// 	console.log('[CouchDB] Replication completed:', change.doc);
+				// 	onReplicationUpdate(change.doc); // Notify WebSocket clients
+				// }
+			}
+		} catch (error) {
+			console.error('[CouchDB] Error monitoring replication:', error);
 		}
 	}
 
@@ -270,37 +321,6 @@ export class CouchDB {
 		}
 	}
 
-	// static async findView(
-	// 	designName: string,
-	// 	viewName: string,
-	// 	params: Record<string, string> = {},
-	// 	keys?: any[]
-	// ): Promise<AllDocs> {
-	// 	try {
-	// 		const { url, options } = await CouchDB.prepareQuery(
-	// 			designName,
-	// 			viewName,
-	// 			params
-	// 		);
-
-	// 		if (keys) options.body = JSON.stringify({ keys });
-
-	// 		const response = await fetch(url, options);
-
-	// 		if (!response.ok)
-	// 			throw new Error(`Failed to query view: ${response.statusText}`);
-
-	// 		const data = await response.json();
-	// 		return data.rows;
-	// 	} catch (error) {
-	// 		console.error('Error querying view:', error);
-	// 		return {
-	// 			total_rows: 0,
-	// 			offset: 0,
-	// 			rows: [],
-	// 		};
-	// 	}
-	// }
 	static async findView(
 		designName: string,
 		viewName: string,

@@ -95,3 +95,4 @@ app.get('/api/view/by_coordinates', async (req, res) => {
 });
 
 initDBAndStartServer().catch(console.dir);
+CouchDB.monitorReplication().catch(console.error);

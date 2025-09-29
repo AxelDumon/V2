@@ -35,6 +35,33 @@ curl -X PUT http://admin:password@127.0.0.1:5984/_global_changes
 curl -X PUT http://admin:password@127.0.0.1:5984/_dbs
 curl -X PUT http://admin:password@127.0.0.1:5984/_nodes
 
+# Create the v2grid database
+echo "[entrypoint] Creating v2grid database..."
+curl -X PUT http://admin:password@127.0.0.1:5984/v2grid
+
+# Ensure the v2grid database exists on all peers
+echo "[entrypoint] Ensuring v2grid database exists on all peers..."
+IFS=',' read -ra PEERS <<< "$AGENT_PEERS"
+for peer in "${PEERS[@]}"; do
+  echo "[entrypoint] Creating v2grid database on $peer..."
+  curl -X PUT http://admin:password@${peer}:5984/v2grid
+done
+
+# Initialize replication
+echo "[entrypoint] Setting up replication..."
+IFS=',' read -ra PEERS <<< "$AGENT_PEERS"
+for peer in "${PEERS[@]}"; do
+  echo "[entrypoint] Setting up replication to $peer..."
+  curl -X POST http://admin:password@127.0.0.1:5984/_replicator \
+       -H "Content-Type: application/json" \
+       -d "{
+             \"_id\": \"repl_${peer}\",
+             \"source\": \"http://admin:password@127.0.0.1:5984/v2grid\",
+             \"target\": \"http://admin:password@${peer}:5984/v2grid\",
+             \"continuous\": true
+           }"
+done
+
 echo "[entrypoint] Stopping CouchDB foreground process..."
 pkill -f "/opt/couchdb/bin/couchdb -n"
 

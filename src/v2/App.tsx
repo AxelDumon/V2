@@ -84,6 +84,7 @@ export default function App() {
 				type: 'cell_update' | 'agent_stats_update';
 				data: any;
 			} = JSON.parse(event.data);
+			console.log('WebSocket message received:', message);
 
 			if (message.type == 'cell_update') {
 				const cell = message.data;
@@ -96,7 +97,13 @@ export default function App() {
 					return newTab;
 				});
 			} else if (message.type == 'agent_stats_update') {
+				console.log('Agent stats update received:', message.data);
 				setAgentStats(message.data);
+			} else if (message.type === 'replication_update') {
+				console.log('Replication update received:', message.data);
+				// Optionally, handle replication updates (e.g., refresh the grid or stats)
+				fetchCells();
+				fetchAgentStats();
 			}
 		};
 

@@ -16,7 +16,7 @@ services:
       - URI=mongodb://10.89.2.11:5984/v2grid 
       - PORT=3001
       - AGENT_NAME=machine1
-      - AGENT_PEERS=http://10.89.2.12:3002,http://10.89.2.13:3003
+      - AGENT_PEERS=machine2,machine3
     ports:
       - "5984:5984"
       - "3001:3001"
@@ -49,7 +49,7 @@ services:
       - URI=mongodb://10.89.2.12:5984/v2grid 
       - PORT=3002
       - AGENT_NAME=machine2
-      - AGENT_PEERS=http://10.89.2.11:3001,http://10.89.2.13:3003
+      - AGENT_PEERS=machine1,machine3
     ports:
       - "5985:5984"
       - "3002:3002"
@@ -82,7 +82,7 @@ services:
       - URI=mongodb://10.89.2.13:5984/v2grid 
       - PORT=3003
       - AGENT_NAME=machine3
-      - AGENT_PEERS=http://10.89.2.11:3001,http://10.89.2.12:3002
+      - AGENT_PEERS=machine1,machine2
     ports:
       - "5986:5984"
       - "3003:3003"

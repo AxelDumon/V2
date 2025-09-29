@@ -19,3 +19,9 @@ export function onCellReserved(cell: any) {
 export function onAgentStatsUpdated(stats: any) {
 	broadcastUpdate({ type: 'agent_stats_update', data: stats });
 }
+
+// Example: Push updates when replication occurs
+export function onReplicationUpdate(replicationInfo: any) {
+	console.log('[WebSocket] Sending replication update:', replicationInfo);
+	broadcastUpdate({ type: 'replication_update', data: replicationInfo });
+}
