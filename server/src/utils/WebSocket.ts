@@ -2,6 +2,7 @@ import wss from '../app.js';
 
 // Broadcast a message to all connected clients
 export function broadcastUpdate(data: any) {
+	console.log('[WebSocket] Broadcasting update:', data);
 	wss.clients.forEach(client => {
 		if (client.readyState === 1) {
 			// WebSocket.OPEN

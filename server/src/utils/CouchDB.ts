@@ -1,7 +1,7 @@
 import { DesignDoc, Document } from './types';
 
 import dotenv from 'dotenv';
-import { onReplicationUpdate } from './WebSocket.js';
+import { broadcastUpdate } from './WebSocket.js';
 dotenv.config();
 
 export class CouchDB {
@@ -61,9 +61,41 @@ export class CouchDB {
 		}
 	}
 
+	// static async monitorReplication() {
+	// 	const url =
+	// 		'http://127.0.0.1:5984/v2grid/_changes?feed=continuous&include_docs=true';
+
+	// 	try {
+	// 		const response = await fetch(url, {
+	// 			headers: { Authorization: CouchDB.authHeader },
+	// 		});
+	// 		const reader = response.body?.getReader();
+
+	// 		if (!reader) {
+	// 			console.error('Failed to read replication changes feed');
+	// 			return;
+	// 		}
+
+	// 		console.log('[CouchDB] Monitoring replication changes...');
+	// 		while (true) {
+	// 			const { done, value } = await reader.read();
+	// 			if (done) break;
+
+	// 			const change = JSON.parse(new TextDecoder().decode(value));
+	// 			if (change.doc && change.doc._replication_state === 'completed') {
+	// 				console.log('[CouchDB] Replication completed:', change.doc);
+	// 				// onReplicationUpdate(change.doc); // Notify WebSocket clients
+	// 				broadcastUpdate({ type: 'db_change', data: change });
+	// 			}
+	// 		}
+	// 	} catch (error) {
+	// 		console.error('[CouchDB] Error monitoring replication:', error);
+	// 	}
+	// }
+
 	static async monitorReplication() {
 		const url =
-			'http://127.0.0.1:5984/_replicator/_changes?feed=continuous&include_docs=true';
+			'http://127.0.0.1:5984/v2grid/_changes?feed=continuous&include_docs=true';
 
 		try {
 			const response = await fetch(url, {
@@ -77,33 +109,36 @@ export class CouchDB {
 			}
 
 			console.log('[CouchDB] Monitoring replication changes...');
+			let buffer = ''; // Buffer to store incomplete chunks
+
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
 
-				// Decode the raw response
-				const rawData = new TextDecoder().decode(value);
-				console.log('[CouchDB] Raw data from _changes feed:', rawData);
+				// Decode the chunk and append it to the buffer
+				buffer += new TextDecoder().decode(value);
 
-				// Parse each line of the response
-				const lines = rawData.split('\n').filter(line => line.trim() !== '');
-				for (const line of lines) {
-					try {
-						const change = JSON.parse(line);
-						if (change.doc && change.doc._replication_state === 'completed') {
-							console.log('[CouchDB] Replication completed:', change.doc);
-							onReplicationUpdate(change.doc); // Notify WebSocket clients
+				// Split the buffer into lines
+				const lines = buffer.split('\n');
+
+				// Process all complete lines
+				for (let i = 0; i < lines.length - 1; i++) {
+					const line = lines[i].trim();
+					if (line) {
+						try {
+							const change = JSON.parse(line);
+							// console.log('[CouchDB] Change detected:', change);
+
+							// Broadcast the change to WebSocket clients
+							broadcastUpdate({ type: 'db_change', data: change });
+						} catch (parseError) {
+							console.error('[CouchDB] Error parsing line:', line, parseError);
 						}
-					} catch (parseError) {
-						console.error('[CouchDB] Error parsing line:', line, parseError);
 					}
 				}
 
-				// const change = JSON.parse(new TextDecoder().decode(value));
-				// if (change.doc && change.doc._replication_state === 'completed') {
-				// 	console.log('[CouchDB] Replication completed:', change.doc);
-				// 	onReplicationUpdate(change.doc); // Notify WebSocket clients
-				// }
+				// Keep the last incomplete line in the buffer
+				buffer = lines[lines.length - 1];
 			}
 		} catch (error) {
 			console.error('[CouchDB] Error monitoring replication:', error);

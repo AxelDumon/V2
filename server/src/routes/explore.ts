@@ -9,7 +9,7 @@ import { CellService } from '../models/CellService.js';
 import Agent from '../models/Agent.js';
 import { Cell } from '../utils/types.js';
 import { shuffle } from '../utils/util.js';
-import { onAgentStatsUpdated, onCellReserved } from '../utils/WebSocket.js';
+// import { onAgentStatsUpdated, onCellReserved } from '../utils/WebSocket.js';
 
 const router = express.Router();
 const DELAY = process.env.DELAY ? Number(process.env.DELAY) : 100;
@@ -46,19 +46,7 @@ router.post('/', async (_req: Request, res: Response) => {
 		// Starts timer
 		const startTime = Date.now();
 
-		// try {
 		Agent.updateExploringTime(true);
-		// } catch (err) {
-		// console.error('Failed to log agent start time:', err);
-		// pendingAgentUpdates.push({
-		// name: agentName,
-		// update: { $set: { startTime: new Date() }, upsert: true },
-		// });
-		// }
-
-		// let cell = await getCellsCollection()
-		// 	.aggregate([{ $match: { valeur: 0 } }, { $sample: { size: 1 } }])
-		// 	.toArray();
 
 		let cell = await CellService.getRandomUndiscoverdCell();
 		if (!cell) {
@@ -109,25 +97,14 @@ router.post('/', async (_req: Request, res: Response) => {
 								agentName
 							);
 
-							// const reserved = await getCellsCollection().findOneAndUpdate(
-							// 	{ x: nx, y: ny, valeur: 0 },
-							// 	{ $inc: { valeur: 1 }, $addToSet: { agents: agentName } },
-							// 	{ returnDocument: 'after', includeResultMetadata: true }
-							// );
 							if (reserved) {
-								// if (reserved.lastErrorObject?.updatedExisting === false) {
-								// 	pendingCells.push(reserved.value!);
-								// }
-								// pendingCells = pendingCells.filter(
-								// 	cell => !(cell.x === nx && cell.y === ny)
-								// );
 								x = nx;
 								y = ny;
 								console.log(
 									`Agent ${agentName} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
 								);
 
-								onCellReserved(reserved);
+								// onCellReserved(reserved);
 
 								await new Promise(resolve => setTimeout(resolve, DELAY));
 
@@ -135,13 +112,6 @@ router.post('/', async (_req: Request, res: Response) => {
 								break;
 							}
 						} catch (error) {
-							// Offline: update pendingCells
-							// pendingCells.push({
-							// 	x: nx,
-							// 	y: ny,
-							// 	valeur: 1,
-							// 	agents: [agentName],
-							// });
 							x = nx;
 							y = ny;
 							foundFrontier = true;
@@ -167,42 +137,22 @@ router.post('/', async (_req: Request, res: Response) => {
 						);
 						break;
 					}
-					// const undiscovered = await getCellsCollection()
-					// 	.aggregate([{ $match: { valeur: 0 } }, { $sample: { size: 1 } }])
-					// 	.toArray();
-					// if (undiscovered.length === 0) break;
-
-					// if (
-					// 	// pendingCells.some(
-					// 	// 	cell => cell.x === undiscovered.x && cell.y === undiscovered.y
-					// 	// )
-					// )
-					// 	continue;
 					console.log('undiscovered: ' + undiscovered.x + ',' + undiscovered.y);
 					const reserved = await CellService.incrementValue(
 						`${undiscovered.x}-${undiscovered.y}`,
 						agentName
 					);
-					// const reserved = await getCellsCollection().findOneAndUpdate(
-					// 	{ x: undiscovered.x, y: undiscovered.y, valeur: 0 },
-					// 	{ $inc: { valeur: 1 }, $addToSet: { agents: agentName } },
-					// 	{ returnDocument: 'after', includeResultMetadata: true }
-					// );
 					if (reserved) {
-						// if (reserved.lastErrorObject?.updatedExisting === false) {
-						// 	pendingCells.push(reserved.value!);
-						// }
 						x = reserved.x;
 						y = reserved.y;
 						console.log(
 							`Agent ${agentName} teleports to cell (${x}, ${y}), value: ${reserved.valeur}`
 						);
 
-						onCellReserved(reserved);
+						// onCellReserved(reserved);
 						await new Promise(resolve => setTimeout(resolve, DELAY));
 					}
 				} catch (error) {
-					// pendingCells.push({ x: x, y: y, valeur: 1, agents: [agentName] });
 					console.error('CouchDB error during teleport:', error);
 					await new Promise(resolve => setTimeout(resolve, DELAY));
 				}
@@ -214,20 +164,10 @@ router.post('/', async (_req: Request, res: Response) => {
 		// try {
 		Agent.updateExploringTime(false);
 
-		const stats = await Agent.getAgentStatsWithDuration();
-		onAgentStatsUpdated(stats);
+		// const stats = await Agent.getAgentStatsWithDuration();
+		// onAgentStatsUpdated(stats);
+		// onAgentStatsUpdated(stats);
 
-		// await getAgentsCollection().updateOne(
-		// 	{ name: agentName },
-		// 	{ $set: { endTime: new Date() } }
-		// );
-		// } catch (err) {
-		// 	console.error('Failed to log agent end time:', err);
-		// 	pendingAgentUpdates.push({
-		// 		name: agentName,
-		// 		update: { $set: { endTime: new Date() } },
-		// 	});
-		// }
 		const durationSec = ((endTime - startTime) / 1000).toFixed(2);
 		console.log(
 			`[Exploration] Agent ${agentName} finished in ${durationSec} seconds.`

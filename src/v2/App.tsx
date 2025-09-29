@@ -81,30 +81,46 @@ export default function App() {
 
 		ws.onmessage = event => {
 			const message: {
-				type: 'cell_update' | 'agent_stats_update';
+				type: string;
 				data: any;
 			} = JSON.parse(event.data);
 			console.log('WebSocket message received:', message);
 
-			if (message.type == 'cell_update') {
-				const cell = message.data;
-				setTab(prevTab => {
-					const newTab = prevTab.map(row => row.slice());
-					newTab[cell.x][cell.y] = {
-						valeur: cell.valeur || 0,
-						agents: cell.agents || [],
-					};
-					return newTab;
-				});
-			} else if (message.type == 'agent_stats_update') {
-				console.log('Agent stats update received:', message.data);
-				setAgentStats(message.data);
-			} else if (message.type === 'replication_update') {
-				console.log('Replication update received:', message.data);
-				// Optionally, handle replication updates (e.g., refresh the grid or stats)
-				fetchCells();
-				fetchAgentStats();
+			if (message.type === 'db_change') {
+				const change = message.data;
+				console.log('Database change detected:', change);
+
+				if (change.doc && change.doc.type === 'cell')
+					setTab(prevTab => {
+						const newTab = prevTab.map(row => row.slice());
+						newTab[change.doc.x][change.doc.y] = {
+							valeur: change.doc.valeur || 0,
+							agents: change.doc.agents || [],
+						};
+						return newTab;
+					});
+
+				if (change.doc && change.doc.type === 'agent') fetchAgentStats();
 			}
+			// if (message.type == 'cell_update') {
+			// 	const cell = message.data;
+			// 	setTab(prevTab => {
+			// 		const newTab = prevTab.map(row => row.slice());
+			// 		newTab[cell.x][cell.y] = {
+			// 			valeur: cell.valeur || 0,
+			// 			agents: cell.agents || [],
+			// 		};
+			// 		return newTab;
+			// 	});
+			// } else if (message.type == 'agent_stats_update') {
+			// 	console.log('Agent stats update received:', message.data);
+			// 	setAgentStats(message.data);
+			// } else if (message.type === 'replication_update') {
+			// 	console.log('Replication update received:', message.data);
+			// 	// Optionally, handle replication updates (e.g., refresh the grid or stats)
+			// 	fetchCells();
+			// 	fetchAgentStats();
+			// }
 		};
 
 		ws.onclose = () => {
@@ -123,6 +139,10 @@ export default function App() {
 		// 	}
 		// };
 	}, []);
+
+	useEffect(() => {
+		console.log('Tab state updated:', tab);
+	}, [tab]);
 
 	useEffect(() => {
 		fetchCells();
