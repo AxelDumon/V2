@@ -4,7 +4,7 @@ import { AgentStat } from '../type';
 
 const SIZE = Number(import.meta.env.VITE_SIZE);
 // const DELAY = Number(import.meta.env.VITE_DELAY);
-const PORT = import.meta.env.PORT || '3001';
+const PORT = import.meta.env.VITE_PORT || 3001;
 console.log('PORT:', PORT);
 const API_URL = 'http://localhost:' + PORT;
 const WS_URL = 'ws://localhost:808' + PORT.toString().charAt(3);
@@ -54,9 +54,9 @@ export default function App() {
 
 	async function triggerExploration() {
 		// setExploring(true);
-		fetchCells();
-		fetchAgentStats();
 		await fetch(`${API_URL}/api/explore`, { method: 'POST' });
+		await fetchCells();
+		await fetchAgentStats();
 		// startFetchingDate();
 	}
 
@@ -115,6 +115,11 @@ export default function App() {
 		// 		clearInterval(intervalRef.current);
 		// 	}
 		// };
+	}, []);
+
+	useEffect(() => {
+		fetchCells();
+		fetchAgentStats();
 	}, []);
 
 	return (

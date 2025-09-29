@@ -9,7 +9,7 @@ ENV COUCHDB_ERL_COOKIE="8zplQ4cMBYma4y6"
 
 # Set the PORT argument and environment variable
 ARG PORT
-ENV PORT=$PORT
+ENV VITE_PORT=$PORT
 
 # Copy CouchDB binaries and dependencies from the first stage
 COPY --from=couchdb /opt/couchdb /opt/couchdb
