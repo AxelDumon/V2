@@ -4,7 +4,7 @@ import { AgentStat } from '../type';
 
 const SIZE = Number(import.meta.env.VITE_SIZE);
 // const DELAY = Number(import.meta.env.VITE_DELAY);
-const PORT = import.meta.env.VITE_PORT || '3001';
+const PORT = import.meta.env.PORT || '3001';
 console.log('PORT:', PORT);
 const API_URL = 'http://localhost:' + PORT;
 const WS_URL = 'ws://localhost:808' + PORT.toString().charAt(3);

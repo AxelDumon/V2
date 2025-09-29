@@ -7,6 +7,10 @@ FROM node:20
 # Set the Erlang magic cookie
 ENV COUCHDB_ERL_COOKIE="8zplQ4cMBYma4y6"
 
+# Set the PORT argument and environment variable
+ARG PORT
+ENV PORT=$PORT
+
 # Copy CouchDB binaries and dependencies from the first stage
 COPY --from=couchdb /opt/couchdb /opt/couchdb
 COPY --from=couchdb /etc/couchdb /etc/couchdb
