@@ -9,6 +9,9 @@
       },
       "by_cells": {
         "map": "function (doc) { if (doc.type === 'cell' ) { emit([doc.x, doc.y], doc); } }"
+      },
+      "undiscovered_neighbors": {
+        "map": "function (doc) { if (doc.type === 'cell' && doc.valeur === 0) { emit([doc.x, doc.y], doc); } }"
       }
     }
   }

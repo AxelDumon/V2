@@ -94,6 +94,47 @@ export class CellService {
 		}
 	}
 
+	static async getUndiscoveredNeighbors(
+		x: number,
+		y: number
+	): Promise<CellDocument[]> {
+		try {
+			const startkey = [Math.max(0, x - 1), Math.max(0, y - 1)];
+			const endkey = [
+				Math.min(CellService.SIZE - 1, x + 1),
+				Math.min(CellService.SIZE - 1, y + 1),
+			];
+			const neighbors = await CouchDB.findView(
+				CellService.designDocId,
+				'undiscovered_neighbors',
+				{
+					startkey: JSON.stringify(startkey),
+					endkey: JSON.stringify(endkey),
+				}
+			);
+
+			const filteredNeighbors = neighbors.rows
+				.map(row => row.value)
+				.filter(cell => {
+					const dx = Math.abs(cell.x - x);
+					const dy = Math.abs(cell.y - y);
+					return (
+						(dx === 1 && dy === 0) ||
+						(dx === 0 && dy === 1) ||
+						(dx === 1 && dy === 1)
+					);
+				});
+
+			return filteredNeighbors;
+		} catch (error) {
+			console.error(
+				`[${CellService.getUndiscoveredNeighbors.name}] Error fetching undiscovered neighbors:`,
+				error
+			);
+			return [];
+		}
+	}
+
 	static async initGrid() {
 		const bulk: CellDocument[] = [];
 		for (let i = 0; i < CellService.SIZE; i++) {

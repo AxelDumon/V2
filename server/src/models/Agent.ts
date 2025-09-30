@@ -66,7 +66,11 @@ export default class Agent {
 				{ include_docs: 'true' },
 				[Agent.agentName]
 			);
-			if (queryResult.total_rows > 0 && queryResult.rows[0].doc) {
+			if (
+				queryResult.total_rows > 0 &&
+				queryResult.rows[0] &&
+				queryResult.rows[0].doc != undefined
+			) {
 				const agentDoc = queryResult.rows[0].doc as AgentDocument;
 				if (isStart) agentDoc.startTime = new Date().toISOString();
 				else agentDoc.endTime = new Date().toISOString();

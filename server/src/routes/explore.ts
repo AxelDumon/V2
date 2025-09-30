@@ -7,8 +7,6 @@ dotenv.config();
 import { v4 as uuidv4 } from 'uuid';
 import { CellService } from '../models/CellService.js';
 import Agent from '../models/Agent.js';
-import { Cell } from '../utils/types.js';
-import { shuffle } from '../utils/util.js';
 // import { onAgentStatsUpdated, onCellReserved } from '../utils/WebSocket.js';
 
 const router = express.Router();
@@ -16,18 +14,6 @@ const DELAY = process.env.DELAY ? Number(process.env.DELAY) : 100;
 let isExploring = false;
 // let pendingCells: Cell[] = [];
 // let pendingAgentUpdates: { name: string; update: any }[] = [];
-
-// Shuffle an array randomly
-
-function isCellDiscovered(dbCell: Cell | null): boolean {
-	// Check DB cell
-	if (dbCell && dbCell.valeur > 0) return true;
-	// Check pendingCells
-	return false;
-	// return pendingCells.some(
-	// 	cell => cell.x === x && cell.y === y && cell.valeur > 0
-	// );
-}
 
 // Start exploration with a new agent
 router.post('/', async (_req: Request, res: Response) => {
@@ -62,66 +48,41 @@ router.post('/', async (_req: Request, res: Response) => {
 
 		while (true) {
 			let foundFrontier = false;
+			const neighbors = await CellService.getUndiscoveredNeighbors(x, y);
+			console.log(`Agent ${agentName} at (${x}, ${y}) checking neighbors...`);
+			neighbors.forEach((neighbor, index) => {
+				console.log(`Neighbor ${index}:`, neighbor);
+			});
+			if (neighbors && neighbors.length > 0) {
+				const dbCell = neighbors[Math.floor(Math.random() * neighbors.length)];
+				const nx = dbCell.x;
+				const ny = dbCell.y;
+				// Try to reserve in DB
+				try {
+					const reserved = await CellService.incrementValue(
+						`${nx}-${ny}`,
+						agentName
+					);
 
-			for (const [dx, dy] of shuffle([
-				[0, 1],
-				[0, -1],
-				[1, 0],
-				[-1, 0],
-				[1, 1],
-				[1, -1],
-				[-1, 1],
-				[-1, -1],
-			])) {
-				const nx = x + dx;
-				const ny = y + dy;
-				if (
-					nx >= 0 &&
-					nx < CellService.SIZE &&
-					ny >= 0 &&
-					ny < CellService.SIZE
-				) {
-					let dbCell: Cell | null = null;
-					try {
-						dbCell = await CellService.findOne(nx, ny);
-					} catch (error) {
-						// If DB is unreachable, dbCell stays null
-						console.error('[Exploration] Failed to fetch cell from DB:', error);
+					if (reserved) {
+						x = nx;
+						y = ny;
+						console.log(
+							`Agent ${agentName} explored frontier cell (${x}, ${y}), value: ${reserved.valeur}`
+						);
+
+						await new Promise(resolve => setTimeout(resolve, DELAY));
+						foundFrontier = true;
 					}
-					// Check if discovered in DB or pendingCells
-					if (!isCellDiscovered(dbCell)) {
-						// Try to reserve in DB
-						try {
-							const reserved = await CellService.incrementValue(
-								`${nx}-${ny}`,
-								agentName
-							);
-
-							if (reserved) {
-								x = nx;
-								y = ny;
-								console.log(
-									`Agent ${agentName} explores frontier cell (${x}, ${y}), value: ${reserved.valeur}`
-								);
-
-								// onCellReserved(reserved);
-
-								await new Promise(resolve => setTimeout(resolve, DELAY));
-
-								foundFrontier = true;
-								break;
-							}
-						} catch (error) {
-							x = nx;
-							y = ny;
-							foundFrontier = true;
-							console.log(
-								`Agent ${agentName} (offline) explores frontier cell (${x}, ${y}), value: 1`
-							);
-							await new Promise(resolve => setTimeout(resolve, DELAY));
-							break;
-						}
-					}
+				} catch (error) {
+					x = nx;
+					y = ny;
+					foundFrontier = true;
+					console.log(
+						`Agent ${agentName} (offline) explores frontier cell (${x}, ${y}), value: 1`
+					);
+					await new Promise(resolve => setTimeout(resolve, DELAY));
+					break;
 				}
 			}
 
