@@ -16,6 +16,8 @@ export default function App() {
 	const [agentStats, setAgentStats] = useState<AgentStat[]>([]);
 	// const [exploring, setExploring] = useState(false);
 	const intervalRef = useRef<number | null>(null);
+	const wsRef = useRef<WebSocket | null>(null);
+	const reconnectTimeoutRef = useRef<number | null>(null);
 
 	async function fetchAgentStats() {
 		const res = await fetch(`${API_URL}/api/agents`);
@@ -26,16 +28,16 @@ export default function App() {
 	async function fetchCells() {
 		const res = await fetch(`${API_URL}/api/cells`);
 		const cells = await res.json();
-		const newTab = Array.from({ length: SIZE }, () =>
-			Array(SIZE).fill({ valeur: 0, agents: [] })
-		);
-		cells.forEach((cell: any) => {
-			newTab[cell.x][cell.y] = {
-				valeur: cell.valeur || 0,
-				agents: cell.agents || [],
-			};
+		setTab(prevTab => {
+			const newTab = prevTab.map(row => row.slice());
+			cells.forEach((cell: any) => {
+				newTab[cell.x][cell.y] = {
+					valeur: cell.valeur || 0,
+					agents: cell.agents || [],
+				};
+			});
+			return newTab;
 		});
-		setTab(newTab);
 	}
 
 	// async function startFetchingDate() {
@@ -65,18 +67,25 @@ export default function App() {
 		setTab(Array.from({ length: SIZE }, () => Array(SIZE).fill(0)));
 		// setExploring(false);
 		setAgentStats([]);
+		fetchCells();
+		fetchAgentStats();
+		// Stop the interval if it's running
 		if (intervalRef.current) {
 			clearInterval(intervalRef.current);
 			intervalRef.current = null;
 		}
 	}
 
-	useEffect(() => {
-		// Connect to the WebSocket server
+	function connectWebSocket() {
 		const ws = new WebSocket(WS_URL);
+		wsRef.current = ws;
 
 		ws.onopen = () => {
 			console.log('Connected to WebSocket server');
+			if (reconnectTimeoutRef.current) {
+				clearTimeout(reconnectTimeoutRef.current);
+				reconnectTimeoutRef.current = null;
+			}
 		};
 
 		ws.onmessage = event => {
@@ -125,24 +134,36 @@ export default function App() {
 
 		ws.onclose = () => {
 			console.log('Disconnected from WebSocket server');
+			// Attempt to reconnect after a delay
+			reconnectTimeoutRef.current = window.setTimeout(() => {
+				console.log('Reconnecting to WebSocket server...');
+				connectWebSocket();
+			}, 2000); // Reconnect after 2 seconds
 		};
 
-		return () => {
-			ws.close();
+		ws.onerror = error => {
+			console.error('WebSocket error:', error);
+			ws.close(); // Ensure the connection is closed on error
 		};
-		// fetchAgentStats();
-		// fetchCells();
-		// startFetchingDate();
-		// return () => {
-		// 	if (intervalRef.current) {
-		// 		clearInterval(intervalRef.current);
-		// 	}
-		// };
-	}, []);
+	}
 
 	useEffect(() => {
-		console.log('Tab state updated:', tab);
-	}, [tab]);
+		// Connect to the WebSocket server
+		connectWebSocket();
+
+		return () => {
+			if (wsRef.current) {
+				wsRef.current.close();
+			}
+			if (reconnectTimeoutRef.current) {
+				clearTimeout(reconnectTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	// useEffect(() => {
+	// 	console.log('Tab state updated:', tab);
+	// }, [tab]);
 
 	useEffect(() => {
 		fetchCells();

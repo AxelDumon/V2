@@ -1,4 +1,4 @@
-import { DesignDoc, Document } from './types';
+import { CellDocument, DesignDoc, Document } from './types';
 
 import dotenv from 'dotenv';
 import { broadcastUpdate } from './WebSocket.js';
@@ -94,8 +94,7 @@ export class CouchDB {
 	// }
 
 	static async monitorReplication() {
-		const url =
-			'http://127.0.0.1:5984/v2grid/_changes?feed=continuous&include_docs=true';
+		const url = `${CouchDB.dbUrl}/_changes?feed=continuous&include_docs=true`;
 
 		try {
 			const response = await fetch(url, {
@@ -142,6 +141,118 @@ export class CouchDB {
 			}
 		} catch (error) {
 			console.error('[CouchDB] Error monitoring replication:', error);
+		}
+	}
+
+	// Listen to changes feed about conflicts and try to resolve them
+	static async monitorConflicts() {
+		const url = `${CouchDB.dbUrl}/_changes?filter=conflicts/conflicting_cells&include_docs=true&conflicts=true&feed=continuous`;
+		try {
+			const response = await fetch(url, {
+				headers: { Authorization: CouchDB.authHeader },
+			});
+			const reader = response.body?.getReader();
+
+			if (!reader) {
+				console.error('Failed to read conflicts changes feed');
+				return;
+			}
+
+			let buffer = ''; // Buffer to store incomplete chunks
+
+			console.log('[CouchDB] Monitoring conflicts...');
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				// Decode the chunk and append it to the buffer
+				buffer += new TextDecoder().decode(value);
+
+				// Split the buffer into lines
+				const lines = buffer.split('\n');
+
+				// Process all complete lines
+				for (let i = 0; i < lines.length - 1; i++) {
+					const line = lines[i].trim();
+					if (line) {
+						try {
+							const change = JSON.parse(line);
+							console.log('[CouchDB] Conflict detected:', change);
+							const { id, doc } = change;
+							if (doc && doc._conflicts) {
+								console.log(`[CouchDB] Resolving conflict for document ${id}`);
+								// Attempt to resolve the conflict
+								await CouchDB.resolveConflict(id, doc, doc._conflicts);
+							}
+
+							// Broadcast the change to WebSocket clients
+							// broadcastUpdate({ type: 'db_change', data: resolvedConflict });
+						} catch (parseError) {
+							console.error('[CouchDB] Error parsing line:', line, parseError);
+						}
+					}
+				}
+
+				// Keep the last incomplete line in the buffer
+				buffer = lines[lines.length - 1];
+			}
+		} catch (error) {
+			console.error('[CouchDB] Error monitoring conflicts:', error);
+		}
+	}
+
+	static async resolveConflict(
+		docId: string,
+		current: CellDocument,
+		conflicts: string[]
+	) {
+		console.log(`[CouchDB] Resolving conflict for document ${docId}`);
+
+		try {
+			const conflictDocs = await Promise.all(
+				conflicts.map(conflictRev =>
+					fetch(`${CouchDB.dbUrl}/${docId}?rev=${conflictRev}`, {
+						headers: { Authorization: CouchDB.authHeader },
+					}).then(res => res.json())
+				)
+			);
+			const mergedDoc = {
+				...current,
+				valeur: current.valeur + conflictDocs.reduce(sum => sum + 1, 0),
+				agents: Array.from(
+					conflictDocs.reduce(
+						(set, d) => {
+							(d.agents || []).forEach((agent: string) => set.add(agent));
+							return set;
+						},
+						new Set(current.agents || [])
+					)
+				),
+				_conflicts: undefined, // Remove conflicts field
+			};
+
+			const resolvedDoc = await CouchDB.updateDocument(mergedDoc);
+
+			if (resolvedDoc) console.log(`[CouchDB] Document ${docId} resolved.`);
+			else console.error(`[CouchDB] Failed to resolve document ${docId}.`);
+
+			await CouchDB.bulkDocs(
+				conflictDocs.map(conflict => ({
+					_id: conflict._id,
+					_rev: conflict._rev,
+					_deleted: true,
+				}))
+			);
+
+			console.log(
+				`[CouchDB] Conflicting revisions deleted for document ${docId}`
+			);
+			return resolvedDoc;
+		} catch (error) {
+			console.error(
+				`[CouchDB] Error resolving conflict for document ${docId}:`,
+				error
+			);
 		}
 	}
 

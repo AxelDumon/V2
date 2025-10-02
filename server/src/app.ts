@@ -95,4 +95,13 @@ app.get('/api/view/by_coordinates', async (req, res) => {
 });
 
 initDBAndStartServer().catch(console.dir);
+// let repPromise =
 CouchDB.monitorReplication().catch(console.error);
+// let confPromise =
+CouchDB.monitorConflicts().catch(console.error);
+// while (true) {
+// 	if (repPromise === undefined)
+// 		repPromise = CouchDB.monitorReplication().catch(console.error);
+// 	if (confPromise === undefined)
+// 		confPromise = CouchDB.monitorConflicts().catch(console.error);
+// }
