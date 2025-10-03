@@ -144,6 +144,43 @@ export class CouchDB {
 		}
 	}
 
+	// Periodically check for conflicts and try to resolve them
+	// static async monitorConflicts() {
+	// 	const url = `${CouchDB.dbUrl}/_design/_conflicts/_view/by_conflicting_cells`;
+	// 	try {
+	// 		console.log('[CouchDB] Monitoring conflicts...');
+	// 		while (true) {
+	// 			const response = await fetch(url, {
+	// 				headers: { Authorization: CouchDB.authHeader },
+	// 			});
+	// 			if (response.ok) {
+	// 				const data = await response.json();
+	// 				for (const row of data.rows) {
+	// 					const docId = row.id;
+	// 					const value = row.value;
+	// 					const current = value.current as CellDocument;
+	// 					const conflicts = value.conflicts as string[];
+	// 					if (
+	// 						current &&
+	// 						conflicts &&
+	// 						current.agents[0] == process.env.AGENT_NAME
+	// 					) {
+	// 						console.log(
+	// 							`[CouchDB][${process.env.AGENT_NAME}] Resolving conflict for document ${docId}`
+	// 						);
+	// 						// Attempt to resolve the conflict
+	// 						await this.resolveConflict(docId, current, conflicts);
+	// 					}
+	// 				}
+	// 				// Wait for a while before checking again
+	// 				await new Promise(resolve => setTimeout(resolve, 5000));
+	// 			}
+	// 		}
+	// 	} catch (error) {
+	// 		console.error('[CouchDB] Error monitoring conflicts:', error);
+	// 	}
+	// }
+
 	// Listen to changes feed about conflicts and try to resolve them
 	static async monitorConflicts() {
 		const url = `${CouchDB.dbUrl}/_changes?filter=conflicts/conflicting_cells&include_docs=true&conflicts=true&feed=continuous`;

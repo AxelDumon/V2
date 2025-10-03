@@ -190,17 +190,30 @@ export class CellService {
 		cellId: string,
 		agentName: string
 	): Promise<CellDocument> {
-		const data = await CouchDB.callUpdateHandler(
-			'cell_updates',
-			'reserve_cell',
-			cellId,
-			{},
-			{ agent: agentName }
-		);
-		if ('doc' in data) return data.doc as CellDocument;
-		else {
-			console.log(`[${CellService.incrementValue.name}] No doc returned`);
-			throw new Error('No doc returned from update handler');
+		try {
+			const data = await CouchDB.callUpdateHandler(
+				'cell_updates',
+				'reserve_cell',
+				cellId,
+				{},
+				{ agent: agentName }
+			).catch(error => {
+				console.error(
+					`[${CellService.incrementValue.name}] Error calling update handler`
+				);
+				throw error;
+			});
+			if (data && 'doc' in data) return data.doc as CellDocument;
+			else {
+				console.log(`[${CellService.incrementValue.name}] No doc returned`);
+				throw new Error('No doc returned from update handler');
+			}
+		} catch (error) {
+			console.error(
+				`[${CellService.incrementValue.name}] Error incrementing cell value:`,
+				error
+			);
+			throw error;
 		}
 	}
 
