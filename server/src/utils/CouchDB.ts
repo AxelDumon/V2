@@ -183,58 +183,73 @@ export class CouchDB {
 
 	// Listen to changes feed about conflicts and try to resolve them
 	static async monitorConflicts() {
-		const url = `${CouchDB.dbUrl}/_changes?filter=conflicts/conflicting_cells&include_docs=true&conflicts=true&feed=continuous`;
+		const changesUrl = `${CouchDB.dbUrl}/_changes?feed=longpoll&filter=_view&view=conflicts/by_conflicting_cells`;
 		try {
-			const response = await fetch(url, {
-				headers: { Authorization: CouchDB.authHeader },
-			});
-			const reader = response.body?.getReader();
+			console.log('[CouchDB] Monitoring conflicts using longpoll...');
 
-			if (!reader) {
-				console.error('Failed to read conflicts changes feed');
-				return;
-			}
-
-			let buffer = ''; // Buffer to store incomplete chunks
-
-			console.log('[CouchDB] Monitoring conflicts...');
 			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
+				// Fetch changes using longpoll
+				const response = await fetch(changesUrl, {
+					headers: { Authorization: CouchDB.authHeader },
+				});
 
-				// Decode the chunk and append it to the buffer
-				buffer += new TextDecoder().decode(value);
-
-				// Split the buffer into lines
-				const lines = buffer.split('\n');
-
-				// Process all complete lines
-				for (let i = 0; i < lines.length - 1; i++) {
-					const line = lines[i].trim();
-					if (line) {
-						try {
-							const change = JSON.parse(line);
-							console.log('[CouchDB] Conflict detected:', change);
-							const { id, doc } = change;
-							if (doc && doc._conflicts) {
-								console.log(`[CouchDB] Resolving conflict for document ${id}`);
-								// Attempt to resolve the conflict
-								await CouchDB.resolveConflict(id, doc, doc._conflicts);
-							}
-
-							// Broadcast the change to WebSocket clients
-							// broadcastUpdate({ type: 'db_change', data: resolvedConflict });
-						} catch (parseError) {
-							console.error('[CouchDB] Error parsing line:', line, parseError);
-						}
-					}
+				if (!response.ok) {
+					console.error(
+						`[CouchDB] Failed to fetch changes: ${response.statusText}`
+					);
+					await new Promise(resolve => setTimeout(resolve, 5000)); // Retry after delay
+					continue;
 				}
 
-				// Keep the last incomplete line in the buffer
-				buffer = lines[lines.length - 1];
+				console.log('[CouchDB] Changes detected:', response.statusText);
+
+				// Query the by_conflicting_cells view to ensure no conflicts are missed
+				await CouchDB.resolveConflictsFromView();
 			}
 		} catch (error) {
 			console.error('[CouchDB] Error monitoring conflicts:', error);
+			// Retry after delay
+			await new Promise(resolve => setTimeout(resolve, 5000));
+			CouchDB.monitorConflicts();
+		}
+	}
+
+	static async resolveConflictsFromView() {
+		const viewUrl = `${CouchDB.dbUrl}/_design/conflicts/_view/by_conflicting_cells?include_docs=true`;
+
+		try {
+			console.log(
+				'[CouchDB] Querying by_conflicting_cells view for unresolved conflicts...'
+			);
+			const response = await fetch(viewUrl, {
+				headers: { Authorization: CouchDB.authHeader },
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to query by_conflicting_cells view: ${response.statusText}`
+				);
+			}
+
+			const data = await response.json();
+			console.log('[CouchDB] Conflicts found in view:', data);
+
+			for (const row of data.rows || []) {
+				const { id, value } = row;
+				const { current, conflicts } = value;
+
+				console.log(
+					`[CouchDB] Processing document ${id} with conflicts:`,
+					value
+				);
+
+				if (current && conflicts) {
+					console.log(`[CouchDB] Resolving conflict for document ${id}`);
+					await CouchDB.resolveConflict(id, current, conflicts);
+				}
+			}
+		} catch (error) {
+			console.error('[CouchDB] Error resolving conflicts from view:', error);
 		}
 	}
 
