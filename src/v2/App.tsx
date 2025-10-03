@@ -62,6 +62,42 @@ export default function App() {
 		// startFetchingDate();
 	}
 
+	async function triggerExplorationForAllMachines() {
+		try {
+			// Fetch the list of peers from the environment variable
+			const peers = import.meta.env.VITE_AGENT_PEERS?.split(',') || [];
+			console.log('Triggering exploration for peers:', peers);
+
+			// Send a POST request to each peer
+			const requests = peers.map((peer: string) => {
+				const peerPort = `300${peer.charAt(peer.length - 1)}`; // Assuming the port is the last character (e.g., machine1 -> 1
+				console.log(
+					`Sending request to http://${peer}:${peerPort}/api/explore`
+				);
+				fetch(`http://${peer}:${peerPort}/api/explore`, {
+					method: 'POST',
+				}).then(res => {
+					if (!res.ok) {
+						console.error(
+							`Failed to trigger exploration on peer ${peer}:`,
+							res.statusText
+						);
+					} else {
+						console.log(`Exploration triggered on peer ${peer}`);
+					}
+				});
+			});
+
+			// Wait for all requests to complete
+			await Promise.all(requests);
+			await triggerExploration();
+
+			console.log('Exploration triggered for all peers');
+		} catch (error) {
+			console.error('Error triggering exploration for all machines:', error);
+		}
+	}
+
 	async function clearGrid() {
 		await fetch(`${API_URL}/api/init`, { method: 'POST' });
 		setTab(Array.from({ length: SIZE }, () => Array(SIZE).fill(0)));
@@ -178,6 +214,12 @@ export default function App() {
 			<div className="mb-3 d-flex flex-row gap-2 justify-content-center">
 				<button className="btn btn-primary" onClick={triggerExploration}>
 					Explorer
+				</button>
+				<button
+					className="btn btn-success"
+					onClick={triggerExplorationForAllMachines}
+				>
+					Explorer (All Machines)
 				</button>
 				<button className="btn btn-danger" onClick={clearGrid}>
 					Vider la grille

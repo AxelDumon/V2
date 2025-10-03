@@ -11,6 +11,9 @@ ENV COUCHDB_ERL_COOKIE="8zplQ4cMBYma4y6"
 ARG PORT
 ENV VITE_PORT=$PORT
 
+ARG AGENT_PEERS
+ENV VITE_AGENT_PEERS=$AGENT_PEERS
+
 # Copy CouchDB binaries and dependencies from the first stage
 COPY --from=couchdb /opt/couchdb /opt/couchdb
 COPY --from=couchdb /etc/couchdb /etc/couchdb

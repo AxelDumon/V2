@@ -79,10 +79,10 @@ router.post('/', async (_req: Request, res: Response) => {
 					y = ny;
 					foundFrontier = true;
 					console.log(
-						`Agent ${agentName} (offline) explores frontier cell (${x}, ${y}), value: 1`
+						`CouchDB error during increment for (${nx}, ${ny}):`,
+						error
 					);
 					await new Promise(resolve => setTimeout(resolve, DELAY));
-					break;
 				}
 			}
 

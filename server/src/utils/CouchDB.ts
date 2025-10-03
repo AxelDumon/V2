@@ -206,8 +206,6 @@ export class CouchDB {
 		current: CellDocument,
 		conflicts: string[]
 	) {
-		console.log(`[CouchDB] Resolving conflict for document ${docId}`);
-
 		try {
 			const conflictDocs = await Promise.all(
 				conflicts.map(conflictRev =>

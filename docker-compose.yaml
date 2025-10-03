@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile.machine
       args:
         - PORT=3001
+        - AGENT_PEERS=10.89.2.12,10.89.2.13
     container_name: machine1
     hostname: machine1
     cap_add:
@@ -39,6 +40,7 @@ services:
       dockerfile: Dockerfile.machine
       args:
         - PORT=3002
+        - AGENT_PEERS=10.89.2.11,10.89.2.13
     container_name: machine2
     hostname: machine2
     # FOR TESTING WITH PING
@@ -72,6 +74,7 @@ services:
       dockerfile: Dockerfile.machine
       args:
         - PORT=3003
+        - AGENT_PEERS=10.89.2.11,10.89.2.12
     container_name: machine3
     hostname: machine3
     # FOR TESTING WITH PING
