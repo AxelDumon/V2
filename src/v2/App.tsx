@@ -56,6 +56,7 @@ export default function App() {
 
 	async function triggerExploration() {
 		// setExploring(true);
+		console.log('Triggering exploration...');
 		await fetch(`${API_URL}/api/explore`, { method: 'POST' });
 		await fetchCells();
 		await fetchAgentStats();
@@ -99,12 +100,12 @@ export default function App() {
 	}
 
 	async function clearGrid() {
+		console.log('Clearing grid...');
 		await fetch(`${API_URL}/api/init`, { method: 'POST' });
-		setTab(Array.from({ length: SIZE }, () => Array(SIZE).fill(0)));
+		// setTab(Array.from({ length: SIZE }, () => Array(SIZE).fill(0)));
 		// setExploring(false);
-		setAgentStats([]);
-		fetchCells();
-		fetchAgentStats();
+		await fetchCells();
+		await fetchAgentStats();
 		// Stop the interval if it's running
 		if (intervalRef.current) {
 			clearInterval(intervalRef.current);

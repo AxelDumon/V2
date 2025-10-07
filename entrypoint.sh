@@ -16,6 +16,22 @@ echo "[cluster]" >> /opt/couchdb/etc/local.ini
 echo "q = 1" >> /opt/couchdb/etc/local.ini
 echo "n = 1" >> /opt/couchdb/etc/local.ini
 
+echo "\n" >> /opt/couchdb/etc/local.ini
+
+# https://stackoverflow.com/questions/44643330/couchdb-difference-between-max-replication-retry-count-and-retries-per-request
+echo "[entrypoint] Configuring CouchDB replication settings..."
+echo "[replicator]" >> /opt/couchdb/etc/local.inis
+# To make the retry backoff smaller and thus retries faster, set the max_history to a lower value. (default is 20)
+echo "max_history = 8" >> /opt/couchdb/etc/local.ini
+# Maximum number of times a replication will be retried before giving up (default is 10)
+# The wait is exponential, so 10 retries can take a long time. That's why we set it to 7.
+echo "retries_per_requset = 7" >> /opt/couchdb/etc/local.ini
+# Maximum number of replications that can run at the same time (default is 500)
+# echo "max_jobs = 9999999" >> /opt/couchdb/etc/local.ini
+echo "max_jobs = 20" >> /opt/couchdb/etc/local.ini # 20 concurrent replications max
+echo "interval = 60000" >> /opt/couchdb/etc/local.ini # 60s
+echo "max_chrun = 10" >> /opt/couchdb/etc/local.ini # 10 changes per run
+
 echo "[entrypoint] Pre-start: Initializing CouchDB system databases..."
 /opt/couchdb/bin/couchdb -n &
 # couchdb &

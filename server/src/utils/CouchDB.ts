@@ -201,6 +201,12 @@ export class CouchDB {
 					continue;
 				}
 
+				// if (response.body === null) {
+				// 	console.error('[CouchDB] Response body is null');
+				// 	await new Promise(resolve => setTimeout(resolve, 5000)); // Retry after delay
+				// 	continue;
+				// }
+
 				console.log('[CouchDB] Changes detected:', response.statusText);
 
 				// Query the by_conflicting_cells view to ensure no conflicts are missed
@@ -243,7 +249,11 @@ export class CouchDB {
 					value
 				);
 
-				if (current && conflicts) {
+				if (
+					current &&
+					conflicts &&
+					current.agents[0] === process.env.AGENT_NAME
+				) {
 					console.log(`[CouchDB] Resolving conflict for document ${id}`);
 					await CouchDB.resolveConflict(id, current, conflicts);
 				}
@@ -277,7 +287,7 @@ export class CouchDB {
 						},
 						new Set(current.agents || [])
 					)
-				),
+				).reverse(),
 				_conflicts: undefined, // Remove conflicts field
 			};
 
