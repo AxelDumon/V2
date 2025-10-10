@@ -10,5 +10,5 @@ export interface CellRepository extends BaseRepository<Cell> {
 	): Promise<Cell | null>;
 	getRandomUndiscoveredCell(): Promise<Cell | null>;
 	getUndiscoveredNeighbors(x: number, y: number): Promise<Cell[]>;
-	initGrid(): Promise<void>;
+	initGrid(): Promise<number>;
 }

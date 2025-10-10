@@ -9,10 +9,18 @@ export class AgentMongoRepository
 	getAgentStats(): Promise<any> {
 		throw new Error('Method not implemented.');
 	}
+
 	getAgentStatsWithDuration(): Promise<any> {
 		throw new Error('Method not implemented.');
 	}
-	updateExploringTime(isTheStart: boolean): Promise<void> {
-		throw new Error('Method not implemented.');
+
+	async updateExploringTime(isTheStart: boolean): Promise<void> {
+		await this.collection.findOneAndUpdate(
+			{},
+			isTheStart
+				? { $set: { startedAt: new Date() } }
+				: { $set: { endedAt: new Date() } },
+			{ returnDocument: 'after', includeResultMetadata: true }
+		);
 	}
 }

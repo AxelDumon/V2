@@ -21,13 +21,39 @@ export class CellMongoRepository
 		).value as Cell;
 	}
 
-	getRandomUndiscoveredCell(): Promise<Cell | null> {
-		throw new Error('Method not implemented.');
+	async getRandomUndiscoveredCell(): Promise<Cell | null> {
+		return (await this.collection
+			.aggregate([{ $match: { valeur: 0 } }, { $sample: { size: 1 } }])
+			.next()) as Cell;
 	}
-	getUndiscoveredNeighbors(x: number, y: number): Promise<Cell[]> {
-		throw new Error('Method not implemented.');
+
+	async getUndiscoveredNeighbors(x: number, y: number): Promise<Cell[]> {
+		return (await this.collection
+			.aggregate([
+				{
+					$match: {
+						valeur: 0,
+						$or: [
+							{ x: x - 1, y: y },
+							{ x: x + 1, y: y },
+							{ x: x, y: y - 1 },
+							{ x: x, y: y + 1 },
+						],
+					},
+				},
+			])
+			.toArray()) as Cell[];
 	}
-	initGrid(): Promise<void> {
-		throw new Error('Method not implemented.');
+
+	async initGrid(): Promise<number> {
+		this.deleteAll();
+		const cells: Cell[] = [];
+		for (let x = 0; x < 100; x++) {
+			for (let y = 0; y < 100; y++) {
+				cells.push({ x: x, y: y, valeur: 0, agents: [] });
+			}
+		}
+		await this.collection.insertMany(cells);
+		return cells.length;
 	}
 }
