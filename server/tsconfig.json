@@ -4,11 +4,11 @@
     "esModuleInterop": true,
     "useDefineForClassFields": true,
     "module": "ESNext",
+    "moduleResolution": "node",
     "target": "ES2020",
     "lib": ["ES2020", "dom", "dom.iterable"],
     "skipLibCheck": true,
     "outDir": "build",
-    "moduleResolution": "node",
     // "allowImportingTsExtensions": true,
     // "noEmit": true,
     // "rewriteRelativeImportExtensions": true,
@@ -20,6 +20,6 @@
     "noFallthroughCasesInSwitch": true,
     // "noUncheckedSideEffectImports": true
   },
-  "include": ["models/**/*", "routes/**/*", "index.ts"],
+  "include": ["models/**/*", "routes/**/*", "app.ts"],
   "exclude": ["node_modules", "build"]
 }

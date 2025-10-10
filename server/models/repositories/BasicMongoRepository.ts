@@ -1,46 +1,46 @@
-import { Collection } from 'mongodb';
-import { Agent } from '../Agent';
-import { Cell } from '../Cell';
-import { BaseRepository } from './interfaces/BaseRepository';
+import { Collection, Document, Filter } from "mongodb";
+import { Agent } from "../Agent";
+import { Cell } from "../Cell";
+import { BaseRepository } from "./interfaces/BaseRepository";
 
-export abstract class BasicMongoRepository<T extends Cell | Agent>
-	implements BaseRepository<T>
+export abstract class BasicMongoRepository<T extends (Cell | Agent) & Document>
+  implements BaseRepository<T>
 {
-	protected collection: Collection<T>;
+  protected collection: Collection<T>;
 
-	constructor(collection: Collection<T>) {
-		this.collection = collection;
-	}
+  constructor(collection: Collection<T>) {
+    this.collection = collection;
+  }
 
-	async deleteAll(): Promise<void> {
-		await this.collection.deleteMany({});
-	}
+  async deleteAll(): Promise<void> {
+    await this.collection.deleteMany({});
+  }
 
-	async count(): Promise<number> {
-		return await this.collection.countDocuments();
-	}
+  async count(): Promise<number> {
+    return await this.collection.countDocuments();
+  }
 
-	async findAll(): Promise<T[]> {
-		return (await this.collection.find().toArray()) as T[];
-	}
+  async findAll(): Promise<T[]> {
+    return (await this.collection.find().toArray()) as T[];
+  }
 
-	async create(item: T): Promise<T> {
-		const result = await this.collection.insertOne(item as any);
-		return { ...item, _id: result.insertedId.toString() } as T;
-	}
+  async create(item: T): Promise<T> {
+    const result = await this.collection.insertOne(item as any);
+    return { ...item, _id: result.insertedId.toString() } as T;
+  }
 
-	async update(id: string, item: Partial<T>): Promise<T | null> {
-		const result = await this.collection.findOneAndUpdate(
-			{ _id: id } as any,
-			{ $set: item },
-			{ returnDocument: 'after' }
-		);
-		if (!result || !('value' in result)) return null;
-		return result.value as T;
-	}
+  async update(id: string, item: Partial<T>): Promise<T | null> {
+    const result = await this.collection.findOneAndUpdate(
+      { _id: id } as Filter<T>,
+      { $set: item },
+      { returnDocument: "after" }
+    );
+    if (!result || !("value" in result)) return null;
+    return result.value as T | null;
+  }
 
-	async deleteById(id: string): Promise<boolean> {
-		const result = await this.collection.deleteOne({ _id: id } as any);
-		return result.deletedCount === 1;
-	}
+  async deleteById(id: string): Promise<boolean> {
+    const result = await this.collection.deleteOne({ _id: id } as any);
+    return result.deletedCount === 1;
+  }
 }
