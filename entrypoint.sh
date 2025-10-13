@@ -25,6 +25,7 @@ echo "[entrypoint] All MongoDB nodes are ready."
 echo "[entrypoint] Waiting for MongoDB instances to stabilize..."
 sleep 10
 
+echo "[entrypoint] Initiating replica set..."
 mongosh --port 27018 /docker-entrypoint-initdb.d/init-replica.js || true
 echo "[entrypoint] Replica set initiation script executed."
 

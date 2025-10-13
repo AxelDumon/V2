@@ -6,8 +6,11 @@ export abstract class BaseManager {
   abstract agentRepository: AgentRepository;
 
   // Common manager methods can be defined here
-  abstract initBase(): Promise<void>;
+  abstract initBase(): Promise<number>;
   abstract getCellRepository(): CellRepository;
   abstract getAgentRepository(): AgentRepository;
   abstract ManagerFactory(): Promise<BaseManager>;
+
+  // Methods that need and the cellRepository and agentRepository
+  abstract getAgentStats(): Promise<any>;
 }

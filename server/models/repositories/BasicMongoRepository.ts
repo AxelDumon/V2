@@ -43,4 +43,12 @@ export abstract class BasicMongoRepository<T extends (Cell | Agent) & Document>
     const result = await this.collection.deleteOne({ _id: id } as any);
     return result.deletedCount === 1;
   }
+
+  getCollection() {
+    return this.collection;
+  }
+
+  setCollection(collection: Collection<T>) {
+    this.collection = collection;
+  }
 }

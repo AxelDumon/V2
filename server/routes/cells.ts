@@ -1,11 +1,12 @@
-import express from 'express';
-import { Agent } from '../models/Agent.js';
+import express from "express";
+import { Agent } from "../models/Agent.js";
 
 const router = express.Router();
 
-router.get('/', async (_req, res) => {
-	const cells = Agent.getCellRepository().findAll();
-	res.json(cells);
+router.get("/", async (_req, res) => {
+  const cells = await Agent.getCellRepository().findAll();
+  console.log(`Fetched ${cells.length} cells from the database`);
+  res.json(cells);
 });
 
 export default router;

@@ -3,8 +3,8 @@ import { BaseManager } from "./BaseManager/interfaces/BaseManager.js";
 export class Agent {
   _id?: string;
   name: string;
-  startedAt?: Date;
-  endedAt?: Date;
+  startTime?: Date;
+  endTime?: Date;
   isExploring?: boolean;
   static baseManager: BaseManager;
 
@@ -32,7 +32,7 @@ export class Agent {
     this.isExploring = true;
     console.log(`[${this.explore.name}] Agent ${this.name} started exploring`);
 
-    this.startedAt = new Date();
+    this.startTime = new Date();
 
     Agent.getAgentRepository().updateExploringTime(true);
 
@@ -41,7 +41,7 @@ export class Agent {
     if (!cell) {
       console.log(`[${this.explore.name}] No undiscovered cells left`);
       this.isExploring = false;
-      this.endedAt = new Date();
+      this.endTime = new Date();
       await Agent.getAgentRepository().updateExploringTime(false);
       return;
     }
@@ -125,11 +125,11 @@ export class Agent {
     }
 
     this.isExploring = false;
-    this.endedAt = new Date();
+    this.endTime = new Date();
     await Agent.getAgentRepository().updateExploringTime(false);
     console.log(
       `[${this.explore.name}] Agent ${this.name} finished exploring in ${(
-        (this.endedAt.getTime() - this.startedAt.getTime()) /
+        (this.endTime.getTime() - this.startTime.getTime()) /
         1000
       ).toFixed(2)} seconds`
     );
