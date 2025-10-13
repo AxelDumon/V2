@@ -1,5 +1,5 @@
-import { AgentRepository } from "../../repositories/interfaces/AgentRepository";
-import { CellRepository } from "../../repositories/interfaces/CellRepository";
+import { AgentRepository } from "../../repositories/interfaces/AgentRepository.js";
+import { CellRepository } from "../../repositories/interfaces/CellRepository.js";
 
 export abstract class BaseManager {
   abstract cellRepository: CellRepository;

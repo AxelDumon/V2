@@ -1,9 +1,9 @@
 import { Db, MongoClient } from "mongodb";
-import { AgentMongoRepository } from "../repositories/AgentMongoRepository";
-import { CellMongoRepository } from "../repositories/CellMongoRepository";
-import { AgentRepository } from "../repositories/interfaces/AgentRepository";
-import { CellRepository } from "../repositories/interfaces/CellRepository";
-import { BaseManager } from "./interfaces/BaseManager";
+import { AgentMongoRepository } from "../repositories/AgentMongoRepository.js";
+import { CellMongoRepository } from "../repositories/CellMongoRepository.js";
+import { AgentRepository } from "../repositories/interfaces/AgentRepository.js";
+import { CellRepository } from "../repositories/interfaces/CellRepository.js";
+import { BaseManager } from "./interfaces/BaseManager.js";
 
 export class MongoManager extends BaseManager {
   cellRepository: CellRepository;

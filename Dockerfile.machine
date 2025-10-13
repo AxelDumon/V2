@@ -17,7 +17,7 @@ COPY . .
 
 RUN npm install -g typescript
 RUN npm install -g concurrently
-RUN npm install && cd server && npm install && tsc
+RUN cd server && npm install && tsc
 
 
 COPY entrypoint.sh /entrypoint.sh

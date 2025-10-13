@@ -1,7 +1,7 @@
 import { Collection, Document, Filter } from "mongodb";
-import { Agent } from "../Agent";
-import { Cell } from "../Cell";
-import { BaseRepository } from "./interfaces/BaseRepository";
+import { Agent } from "../Agent.js";
+import { Cell } from "../Cell.js";
+import { BaseRepository } from "./interfaces/BaseRepository.js";
 
 export abstract class BasicMongoRepository<T extends (Cell | Agent) & Document>
   implements BaseRepository<T>

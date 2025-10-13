@@ -1,7 +1,7 @@
-import { BasicMongoRepository } from "./BasicMongoRepository";
-import { Cell } from "../Cell";
-import { CellRepository } from "./interfaces/CellRepository";
-import { parameters } from "../../app";
+import { BasicMongoRepository } from "./BasicMongoRepository.js";
+import { Cell } from "../Cell.js";
+import { CellRepository } from "./interfaces/CellRepository.js";
+import { parameters } from "../../app.js";
 
 export class CellMongoRepository
   extends BasicMongoRepository<Cell>
