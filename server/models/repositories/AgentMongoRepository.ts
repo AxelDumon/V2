@@ -7,12 +7,15 @@ export class AgentMongoRepository
   implements AgentRepository
 {
   async updateExploringTime(isTheStart: boolean): Promise<void> {
-    await this.collection.findOneAndUpdate(
+    const result = await this.collection.findOneAndUpdate(
       {},
       isTheStart
         ? { $set: { startTime: new Date() } }
         : { $set: { endTime: new Date() } },
       { returnDocument: "after", includeResultMetadata: true }
+    );
+    console.log(
+      `[updateExploringTime] Agent exploring time updated: ${result.value}`
     );
   }
 }

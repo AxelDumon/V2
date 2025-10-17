@@ -33,7 +33,7 @@ export abstract class BasicMongoRepository<T extends (Cell | Agent) & Document>
     const result = await this.collection.findOneAndUpdate(
       { _id: id } as Filter<T>,
       { $set: item },
-      { returnDocument: "after" }
+      { returnDocument: "after", upsert: true }
     );
     if (!result || !("value" in result)) return null;
     return result.value as T | null;

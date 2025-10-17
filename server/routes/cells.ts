@@ -5,7 +5,6 @@ const router = express.Router();
 
 router.get("/", async (_req, res) => {
   const cells = await Agent.getCellRepository().findAll();
-  console.log(`Fetched ${cells.length} cells from the database`);
   res.json(cells);
 });
 

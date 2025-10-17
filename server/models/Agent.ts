@@ -1,4 +1,5 @@
 import { BaseManager } from "./BaseManager/interfaces/BaseManager.js";
+import { CellMongoRepository } from "./repositories/CellMongoRepository.js";
 
 export class Agent {
   _id?: string;
@@ -33,8 +34,10 @@ export class Agent {
     console.log(`[${this.explore.name}] Agent ${this.name} started exploring`);
 
     this.startTime = new Date();
+    this.endTime = undefined;
 
-    Agent.getAgentRepository().updateExploringTime(true);
+    await Agent.getAgentRepository().update(this._id!, this);
+    // Agent.getAgentRepository().updateExploringTime(true);
 
     // Cell to discover
     let cell = await Agent.getCellRepository().getRandomUndiscoveredCell();
@@ -132,6 +135,11 @@ export class Agent {
         (this.endTime.getTime() - this.startTime.getTime()) /
         1000
       ).toFixed(2)} seconds`
+    );
+    console.log(
+      `[${this.explore.name}] Agent ${
+        this.name
+      } have this table : ${JSON.stringify(CellMongoRepository.BOOL_GRID)}`
     );
   }
 }

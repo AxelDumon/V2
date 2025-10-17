@@ -1,0 +1,63 @@
+import { WebSocketServer } from "ws";
+
+import dotenv from "dotenv";
+dotenv.config();
+
+export default class WebSocketManager {
+  static wss: WebSocketServer;
+  static wsport: number = 8080 + Number(process.env.PORT?.charAt(3));
+
+  static connect() {
+    WebSocketManager.wss = new WebSocketServer({
+      port: WebSocketManager.wsport,
+    });
+    WebSocketManager.wss.on("connection", (ws) => {
+      console.log("[WSS] Client connected");
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket server");
+      };
+
+      ws.on("message", (message) => {
+        console.log("Received message:", message.toString());
+      });
+
+      ws.onclose = function (e) {
+        console.log(
+          "Socket is closed. Reconnect will be attempted in 0.5 second.",
+          e.reason
+        );
+        setTimeout(function () {
+          WebSocketManager.connect();
+        }, 500);
+      };
+
+      ws.onerror = function (err) {
+        console.error(
+          "Socket encountered error: ",
+          err.message,
+          "Closing socket"
+        );
+        ws.close();
+      };
+    });
+  }
+
+  static broadcastUpdate(data: any) {
+    console.log("[WebSocket] Broadcasting update:", data);
+    data.type = "db_change";
+    WebSocketManager.wss.clients.forEach((client) => {
+      if (client.readyState === client.OPEN) {
+        client.send(JSON.stringify(data));
+      }
+    });
+  }
+
+  static onCellReserved(cell: any) {
+    WebSocketManager.broadcastUpdate({ type: "cell_update", cell });
+  }
+
+  static onAgentUpdate(stats: any) {
+    WebSocketManager.broadcastUpdate({ type: "agent_stats_update", stats });
+  }
+}

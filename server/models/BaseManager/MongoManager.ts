@@ -8,6 +8,7 @@ import { Cell } from "../Cell.js";
 import { Agent } from "../Agent.js";
 
 import dotenv from "dotenv";
+import { broadcastUpdate } from "../utils/WebSocket.js";
 dotenv.config();
 
 export class MongoManager extends BaseManager {
@@ -56,6 +57,14 @@ export class MongoManager extends BaseManager {
       this.agentRepository = new AgentMongoRepository(
         this.db.collection("agents")
       );
+      this.db
+        .watch([], { fullDocument: "updateLookup" })
+        .on("change", (change) => {
+          if ("fullDocument" in change && change.fullDocument) {
+            broadcastUpdate(change.fullDocument);
+          } else {
+          }
+        });
     } catch (e) {
       console.error("Failed to connect to MongoDB", e);
       throw e;

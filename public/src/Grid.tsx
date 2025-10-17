@@ -1,22 +1,34 @@
-import { JSX } from 'react';
 import Cell from './Cell';
-import { GridProps } from './type';
 
-export default function Grid({ size, cellSize, tab }: GridProps) {
-	const cells: JSX.Element[] = [];
-	for (let i = 0; i < size; i++) {
-		for (let j = 0; j < size; j++) {
-			cells.push(
-				<Cell key={`${i}-${j}`} size={cellSize} crossingNumber={tab[i][j]} />
-			);
-		}
-	}
+type CellData = {
+	valeur: number;
+	agents?: string[];
+};
+
+type GridProps = {
+	cellSize: number;
+	tab: CellData[][];
+};
+
+export default function Grid({ cellSize, tab }: GridProps) {
 	return (
-		<div className="grid">
+		<div
+			className="grid d-flex flex-column align-items-center justify-content-center w-100"
+			style={{ backgroundColor: '#383838ff' }}
+		>
 			{tab.map((row, i) => (
-				<div className="grid-row" key={i} style={{ display: 'flex' }}>
+				<div className="grid-row d-flex" key={i} style={{}}>
 					{row.map((cell, j) => (
-						<Cell key={`${i}-${j}`} size={cellSize} crossingNumber={cell} />
+						<Cell
+							key={`${i}-${j}`}
+							size={cellSize}
+							crossingNumber={cell.valeur}
+							agentId={
+								cell.agents && cell.agents.length > 0
+									? cell.agents[cell.agents.length - 1]
+									: undefined
+							}
+						/>
 					))}
 				</div>
 			))}

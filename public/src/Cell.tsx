@@ -24,11 +24,12 @@ const agentColors: string[] = [
 
 function getAgentColor(agentId?: string) {
 	if (!agentId) return 'white';
-	let hash = 0;
-	for (let i = 0; i < agentId.length; i++) {
-		hash = agentId.charCodeAt(i) + ((hash << 5) - hash);
-	}
-	const idx = Math.abs(hash) % agentColors.length;
+	const idx = Number(agentId.toString().slice(-1)) % agentColors.length;
+	// let hash = 0;
+	// for (let i = 0; i < agentId.length; i++) {
+	// 	hash = agentId.charCodeAt(i) + ((hash << 5) - hash);
+	// }
+	// const idx = Math.abs(hash) % agentColors.length;
 	return agentColors[idx];
 }
 
