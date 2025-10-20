@@ -26,6 +26,18 @@ if [ -z "$SIZE" ]; then
   exit 1
 fi
 
+# Check if NUM_MACHINES is set
+if [ -z "$NUM_MACHINES" ]; then
+  echo "NUM_MACHINES is not set in the .env file. Exiting."
+  exit 1
+fi
+
+# Check if BASE_PORT is set
+if [ -z "$BASE_PORT" ]; then
+  echo "BASE_PORT is not set in the .env file. Exiting."
+  exit 1
+fi
+
 # Update DELAY & SIZE in backend .env file
 BACKEND_ENV_FILE="./server/.env"
 if [ -f "$BACKEND_ENV_FILE" ]; then
@@ -44,6 +56,10 @@ if [ -f "$FRONTEND_ENV_FILE" ]; then
   echo "Updated VITE_DELAY in $FRONTEND_ENV_FILE to $DELAY"
   sed -i "s/^VITE_SIZE=.*/VITE_SIZE=$SIZE/" "$FRONTEND_ENV_FILE"
   echo "Updated VITE_SIZE in $FRONTEND_ENV_FILE to $SIZE"
+  sed -i "s/^VITE_NUM_MACHINES=.*/VITE_NUM_MACHINES=$NUM_MACHINES/" "$FRONTEND_ENV_FILE"
+  echo "Updated VITE_NUM_MACHINES in $FRONTEND_ENV_FILE to $NUM_MACHINES"
+  sed -i "s/^VITE_BASE_PORT=.*/VITE_BASE_PORT=$BASE_PORT/" "$FRONTEND_ENV_FILE"
+  echo "Updated VITE_BASE_PORT in $FRONTEND_ENV_FILE to $BASE_PORT"
 else
   echo "Frontend .env file not found at $FRONTEND_ENV_FILE"
 fi

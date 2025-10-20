@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Grid from './Grid';
 import { AgentStat } from './type';
+import TriggerAllExplorationsButton from './TriggerAllExplorationsButton';
 
 const SIZE = Number(import.meta.env.VITE_SIZE);
 // const DELAY = Number(import.meta.env.VITE_DELAY);
@@ -171,6 +172,7 @@ export default function App() {
 			style={{ backgroundColor: '#212529', minHeight: '100vh' }}
 		>
 			<div className="mb-3 d-flex flex-row gap-2 justify-content-center">
+				<TriggerAllExplorationsButton />
 				<button className="btn btn-primary" onClick={triggerExploration}>
 					Explorer
 				</button>

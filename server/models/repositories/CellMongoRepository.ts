@@ -54,15 +54,14 @@ export class CellMongoRepository
       return null;
     }
 
+    const boolGrid = CellMongoRepository.BOOL_GRID.slice();
     // Update BOOL_GRID based on found cells
     foundCells.forEach((cell) => {
-      CellMongoRepository.BOOL_GRID[
-        cell.x * CellMongoRepository.SIZE + cell.y
-      ] = true;
+      boolGrid[cell.x * CellMongoRepository.SIZE + cell.y] = true;
     });
 
     const unexploredCells: { x: number; y: number }[] = [];
-    CellMongoRepository.BOOL_GRID.forEach((cell, index) => {
+    boolGrid.forEach((cell, index) => {
       if (!cell) {
         const x = Math.floor(index / CellMongoRepository.SIZE);
         const y = index % CellMongoRepository.SIZE;
@@ -140,7 +139,6 @@ export class CellMongoRepository
 
   async initGrid(): Promise<number> {
     this.deleteAll();
-    CellMongoRepository.BOOL_GRID.fill(false);
     // const cells: Cell[] = [];
     // for (let x = 0; x < size; x++) {
     //   for (let y = 0; y < size; y++) {

@@ -1,5 +1,4 @@
 import { BaseManager } from "./BaseManager/interfaces/BaseManager.js";
-import { CellMongoRepository } from "./repositories/CellMongoRepository.js";
 
 export class Agent {
   _id?: string;
@@ -135,11 +134,6 @@ export class Agent {
         (this.endTime.getTime() - this.startTime.getTime()) /
         1000
       ).toFixed(2)} seconds`
-    );
-    console.log(
-      `[${this.explore.name}] Agent ${
-        this.name
-      } have this table : ${JSON.stringify(CellMongoRepository.BOOL_GRID)}`
     );
   }
 }
