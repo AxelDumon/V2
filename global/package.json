@@ -1,0 +1,32 @@
+{
+  "name": "global",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "GlobalApp.js",
+  "scripts": {
+    "dev": "vite",
+    "build:frontend": "vite build",
+    "build:backend": "tsc",
+    "build": "npm run build:frontend && npm run build:backend",
+    "start": "node dist/GlobalApp.js",
+    "build-and-start": "npm run build && npm run start"
+  },
+  "dependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "prettier": "^3.6.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.11"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3"
+  }
+}

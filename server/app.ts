@@ -73,6 +73,7 @@ import cellsRouter from "./routes/cells.js";
 import exploreRouter from "./routes/explore.js";
 import initRouter from "./routes/init.js";
 import agentsRouter from "./routes/agents.js";
+import statusRouter from "./routes/status.js";
 import cors from "cors";
 import { Agent } from "./models/Agent.js";
 import { MongoManager } from "./models/BaseManager/MongoManager.js";
@@ -90,6 +91,7 @@ app.use("/api/cells", cellsRouter);
 app.use("/api/explore", exploreRouter);
 app.use("/api/init", initRouter);
 app.use("/api/agents", agentsRouter);
+app.use("/api/status", statusRouter);
 
 async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {

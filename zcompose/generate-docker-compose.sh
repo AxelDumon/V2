@@ -64,6 +64,17 @@ else
   echo "Frontend .env file not found at $FRONTEND_ENV_FILE"
 fi
 
+# Update BACKEND_SERVICES in global frontend .env file
+GLOBAL_ENV_FILE="./global/.env"
+if [ -f "$GLOBAL_ENV_FILE" ]; then
+  BACKEND_SERVICES=$(for ((i=1; i<=NUM_MACHINES; i++)); do echo -n "10.89.2.$((10 + i)):3000,"; done | sed 's/,$//')
+  sed -i "s/^BACKEND_SERVICES=.*/BACKEND_SERVICES='$BACKEND_SERVICES'/" "$GLOBAL_ENV_FILE"
+  sed -i "s/^VITE_BACKEND_SERVICES=.*/VITE_BACKEND_SERVICES='$BACKEND_SERVICES'/" "$GLOBAL_ENV_FILE"
+  echo "Updated BACKEND_SERVICES in $GLOBAL_ENV_FILE to '$BACKEND_SERVICES'"
+else
+  echo "Global frontend .env file not found at $GLOBAL_ENV_FILE"
+fi
+
 # Start generating the docker-compose.yaml file
 cat <<EOF > docker-compose.yaml
 version: '3.8'

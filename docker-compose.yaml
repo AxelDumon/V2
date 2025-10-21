@@ -1,12 +1,26 @@
 version: '3.8'
 
 services:
+  global-frontend:
+    build:
+      context: ./global
+      dockerfile: Dockerfile.frontend
+    container_name: global-frontend
+    hostname: global-frontend
+    ports:
+      - "3000:3000" # Expose the global frontend on the host
+    networks:
+      mongo-cluster:
+        ipv4_address: 10.89.2.10
+    environment:
+      - BACKEND_SERVICES=10.89.2.11:3000,10.89.2.12:3000,10.89.2.13:3000,10.89.2.14:3000,10.89.2.15:3000
+
   machine1:
     build:
       context: .
       dockerfile: Dockerfile.machine
       args:
-        - PORT=3001
+        - PORT=3000
         # - AGENT_PEERS=10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005
     container_name: machine1
     hostname: machine1
@@ -15,17 +29,17 @@ services:
       - NET_RAW
     environment:
       - MONGO_URI=mongodb://10.89.2.11:27018/v2grid
-      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005/v2grid?replicaSet=shard1
-      - PORT=3001
+      - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018,10.89.2.14:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
+      - PORT=3000
       - DB_NAME=v2grid
       - AGENT_ID=machine1
       - AGENT_NAME=machine1
     #   - AGENT_PEERS=10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005
-    ports:
-      - "27018:27018"
-      - "3001:3001"
-      - "8001:8000"
-      - "8081:8081"
+    # ports:
+    #   - "27018:27018"
+      # - "3000:3000"
+      # - "8000:8000"
+      # - "8080:8080"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
@@ -40,7 +54,7 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
-        - PORT=3002
+        - PORT=3000
         # - AGENT_PEERS=10.89.2.11:3001,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005
     container_name: machine2
     hostname: machine2
@@ -48,18 +62,18 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://10.89.2.12:27019/v2grid
-      - REPL_MONGO_URI=mongodb://10.89.2.12:27018,10.89.2.11:3001,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005/v2grid?replicaSet=shard1
-      - PORT=3002
+      - MONGO_URI=mongodb://10.89.2.12:27018/v2grid
+      - REPL_MONGO_URI=mongodb://10.89.2.12:27018,10.89.2.11:27018,10.89.2.13:27018,10.89.2.14:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
+      - PORT=3000
       - DB_NAME=v2grid
       - AGENT_ID=machine2
       - AGENT_NAME=machine2
     #   - AGENT_PEERS=10.89.2.11:3001,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005
-    ports:
-      - "27019:27018"
-      - "3002:3002"
-      - "8002:8000"
-      - "8082:8082"
+    # ports:
+    #   - "27019:27018"
+      # - "3000:3000"
+      # - "8000:8000"
+      # - "8080:8080"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
@@ -74,7 +88,7 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
-        - PORT=3003
+        - PORT=3000
         # - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.14:3004,10.89.2.15:3005
     container_name: machine3
     hostname: machine3
@@ -82,18 +96,18 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://10.89.2.13:27020/v2grid
-      - REPL_MONGO_URI=mongodb://10.89.2.13:27018,10.89.2.11:3001,10.89.2.12:3002,10.89.2.14:3004,10.89.2.15:3005/v2grid?replicaSet=shard1
-      - PORT=3003
+      - MONGO_URI=mongodb://10.89.2.13:27018/v2grid
+      - REPL_MONGO_URI=mongodb://10.89.2.13:27018,10.89.2.11:27018,10.89.2.12:27018,10.89.2.14:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
+      - PORT=3000
       - DB_NAME=v2grid
       - AGENT_ID=machine3
       - AGENT_NAME=machine3
     #   - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.14:3004,10.89.2.15:3005
-    ports:
-      - "27020:27018"
-      - "3003:3003"
-      - "8003:8000"
-      - "8083:8083"
+    # ports:
+    #   - "27020:27018"
+      # - "3000:3000"
+      # - "8000:8000"
+      # - "8080:8080"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
@@ -108,7 +122,7 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
-        - PORT=3004
+        - PORT=3000
         # - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.13:3003,10.89.2.15:3005
     container_name: machine4
     hostname: machine4
@@ -116,18 +130,18 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://10.89.2.14:27021/v2grid
-      - REPL_MONGO_URI=mongodb://10.89.2.14:27018,10.89.2.11:3001,10.89.2.12:3002,10.89.2.13:3003,10.89.2.15:3005/v2grid?replicaSet=shard1
-      - PORT=3004
+      - MONGO_URI=mongodb://10.89.2.14:27018/v2grid
+      - REPL_MONGO_URI=mongodb://10.89.2.14:27018,10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
+      - PORT=3000
       - DB_NAME=v2grid
       - AGENT_ID=machine4
       - AGENT_NAME=machine4
     #   - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.13:3003,10.89.2.15:3005
-    ports:
-      - "27021:27018"
-      - "3004:3004"
-      - "8004:8000"
-      - "8084:8084"
+    # ports:
+    #   - "27021:27018"
+      # - "3000:3000"
+      # - "8000:8000"
+      # - "8080:8080"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
@@ -142,7 +156,7 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
-        - PORT=3005
+        - PORT=3000
         # - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004
     container_name: machine5
     hostname: machine5
@@ -150,18 +164,18 @@ services:
       - IPC_LOCK
       - NET_RAW
     environment:
-      - MONGO_URI=mongodb://10.89.2.15:27022/v2grid
-      - REPL_MONGO_URI=mongodb://10.89.2.15:27018,10.89.2.11:3001,10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004/v2grid?replicaSet=shard1
-      - PORT=3005
+      - MONGO_URI=mongodb://10.89.2.15:27018/v2grid
+      - REPL_MONGO_URI=mongodb://10.89.2.15:27018,10.89.2.11:3000,10.89.2.12:3000,10.89.2.13:3000,10.89.2.14:3000/v2grid?replicaSet=shard1
+      - PORT=3000
       - DB_NAME=v2grid
       - AGENT_ID=machine5
       - AGENT_NAME=machine5
     #   - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004
-    ports:
-      - "27022:27018"
-      - "3005:3005"
-      - "8005:8000"
-      - "8085:8085"
+    # ports:
+    #   - "27022:27018"
+      # - "3000:3000"
+      # - "8000:8000"
+      # - "8080:8080"
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
