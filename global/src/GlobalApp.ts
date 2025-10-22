@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 import dotenv from 'dotenv';
+import { URLS } from './urls';
 dotenv.config();
 
 const app = express();
@@ -19,7 +20,7 @@ const buildPath = path.join(__dirname, '../build');
 app.use(express.static(buildPath));
 
 // Endpoint to start exploration and set the timer
-app.post('/api/explore', async (_req, res) => {
+app.post(URLS.EXPLORE, async (_req, res) => {
 	try {
 		explorationStartTime = new Date(); // Set the exploration start time
 		await Promise.all(
@@ -35,7 +36,7 @@ app.post('/api/explore', async (_req, res) => {
 });
 
 // Endpoint to get the exploration timer
-app.get('/api/exploration-timer', (_req, res) => {
+app.get(URLS.EXPLORATION_TIMER, (_req, res) => {
 	if (!explorationStartTime) {
 		return res.json({ started: false });
 	}
@@ -44,7 +45,7 @@ app.get('/api/exploration-timer', (_req, res) => {
 });
 
 // Endpoint to get agent statuses
-app.get('/api/agent-status', async (_req, res) => {
+app.get(URLS.AGENT_STATUS, async (_req, res) => {
 	try {
 		const statuses = await Promise.all(
 			BACKEND_SERVICES.map(async service => {
@@ -61,6 +62,39 @@ app.get('/api/agent-status', async (_req, res) => {
 	} catch (error: Error | any) {
 		console.error('Error fetching agent statuses:', error.message);
 		res.status(500).json({ error: 'Failed to fetch agent statuses' });
+	}
+});
+
+app.get(URLS.AGENT_GRID(':agent'), async (req, res) => {
+	const agent = req.params.agent;
+	try {
+		const results = await Promise.all(
+			BACKEND_SERVICES.filter(service => service.includes(agent)).map(
+				async service => {
+					try {
+						const response = await fetch(
+							`http://${service}/api/cells/${agent}`
+						);
+						if (response.ok) {
+							const data = await response.json();
+							return data;
+						}
+						return null;
+					} catch {
+						return null;
+					}
+				}
+			)
+		);
+		const validResults = results.filter(result => result !== null);
+		if (validResults.length === 0) {
+			return res.status(404).json({ error: 'Agent not found' });
+		}
+		// Assuming all valid results are the same, return the first one
+		res.json(validResults[0]);
+	} catch (error: Error | any) {
+		console.error('Error fetching agent grid:', error.message);
+		res.status(500).json({ error: 'Failed to fetch agent grid' });
 	}
 });
 

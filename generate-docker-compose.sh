@@ -49,6 +49,22 @@ else
   echo "Backend .env file not found at $BACKEND_ENV_FILE"
 fi
 
+# Update BACKEND_SERVICES in global frontend .env file
+GLOBAL_ENV_FILE="./global/.env"
+if [ -f "$GLOBAL_ENV_FILE" ]; then
+  BACKEND_SERVICES=$(for ((i=1; i<=NUM_MACHINES; i++)); do echo -n "10.89.2.$((10 + i)):3000,"; done | sed 's/,$//')
+  sed -i "s/^BACKEND_SERVICES=.*/BACKEND_SERVICES='$BACKEND_SERVICES'/" "$GLOBAL_ENV_FILE"
+  echo "Updated BACKEND_SERVICES in $GLOBAL_ENV_FILE to '$BACKEND_SERVICES'"
+  sed -i "s/^VITE_BACKEND_SERVICES=.*/VITE_BACKEND_SERVICES='$BACKEND_SERVICES'/" "$GLOBAL_ENV_FILE"
+  echo "Updated VITE_BACKEND_SERVICES in $GLOBAL_ENV_FILE to '$BACKEND_SERVICES'"
+  sed -i "s/^VITE_SIZE=.*/VITE_SIZE=$SIZE/" "$GLOBAL_ENV_FILE"
+  echo "Updated VITE_SIZE in $GLOBAL_ENV_FILE to $SIZE"
+  sed -i "s/^VITE_DELAY=.*/VITE_DELAY=$DELAY/" "$GLOBAL_ENV_FILE"
+  echo "Updated VITE_DELAY in $GLOBAL_ENV_FILE to $DELAY"
+else
+  echo "Global frontend .env file not found at $GLOBAL_ENV_FILE"
+fi
+
 # Update VITE_DELAY & VITE_SIZE in frontend .env file
 FRONTEND_ENV_FILE="./public/.env"
 if [ -f "$FRONTEND_ENV_FILE" ]; then

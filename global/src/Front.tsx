@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { CellData } from './types';
+import Grid from './components/Grid';
 // import "./App.css";
 
 const GlobalApp: React.FC = () => {
+	const SIZE = parseInt(import.meta.env.VITE_SIZE) || 50;
 	const [agents, setAgents] = useState<string[]>([]);
 	const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-	const [grid, setGrid] = useState<number[][]>([]);
+	const [grid, setGrid] = useState<CellData[][]>(() =>
+		Array.from({ length: SIZE }, () =>
+			Array(SIZE).fill({ valeur: 0, agents: [] })
+		)
+	);
 	const [agentStatus, setAgentStatus] = useState<any[]>([]);
 	const [explorationTime, setExplorationTime] = useState<number>(0);
 
@@ -91,8 +98,8 @@ const GlobalApp: React.FC = () => {
 					</button>
 				))}
 			</div>
-			<div className="grid">
-				{grid.map((row, rowIndex) => (
+			<div className="border rounded p-3 bg-light">
+				{/* {grid.map((row, rowIndex) => (
 					<div key={rowIndex} className="grid-row">
 						{row.map((cell, cellIndex) => (
 							<div
@@ -104,7 +111,8 @@ const GlobalApp: React.FC = () => {
 							</div>
 						))}
 					</div>
-				))}
+				))} */}
+				<Grid cellSize={800 / SIZE} tab={grid} />
 			</div>
 			<div className="agent-status">
 				<h2>Agent Status</h2>
