@@ -1,7 +1,0 @@
-VITE_SIZE=40
-VITE_DELAY=25
-VITE_API_URL=http://localhost:${PORT}
-SIZE=40
-DELAY=200
-MONGO_URI=mongodb://node1:27018,node2:27018,node3:27018/v2grid?replicaSet=shard1
-PORT=3001

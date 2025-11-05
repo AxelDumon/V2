@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // import { WebSocketServer } from "ws";
-const wsport = 8080 + Number(process.env.PORT?.charAt(3));
+const wsport = Number(process.env.BASE_WS_PORT) || 8080;
 // const wss = new WebSocketServer({
 //   port: wsport,
 
@@ -80,7 +80,7 @@ import { MongoManager } from "./models/BaseManager/MongoManager.js";
 import { WebSocketServer } from "ws";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3001;
+const PORT = Number(process.env.BASE_PORT) || 3000;
 
 app.use(cors());
 app.use(express.json());

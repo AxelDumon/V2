@@ -6,6 +6,10 @@ export default {
         host: '0.0.0.0',
         port: 8000,
     },
-    // active le plugin react  
-    plugins: [react()],  
-};  
+    build: {
+        outDir: './build',
+        emptyOutDir: true,
+    },
+    // active le plugin react
+    plugins: [react()],
+};

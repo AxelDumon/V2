@@ -1,12 +1,12 @@
 {
   "name": "v2-server",
   "version": "1.0.0",
-  "main": "build/server/app.js",
+  "main": "app.js",
   "type": "module",
   "resolveJsonModule": true,
   "esModuleInterop": true,
   "scripts": {
-    "start": "npx ts-node app.ts",
+    "start": "node build/app.js",
     "build": "tsc"
   },
   "dependencies": {

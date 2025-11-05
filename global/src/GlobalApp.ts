@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 import dotenv from 'dotenv';
-import { URLS } from './urls';
+import { URLS } from './urls.js';
 dotenv.config();
 
 const app = express();
@@ -102,7 +102,7 @@ app.get(/^\/(?!api).*/, (_req, res) => {
 	res.sendFile(path.join(buildPath, 'index.html'));
 });
 
-const PORT = 3000;
+const PORT = 3001;
 app.listen(PORT, () => {
 	console.log(`Global frontend running on http://localhost:${PORT}`);
 });
