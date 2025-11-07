@@ -7,6 +7,11 @@ type GridProps = {
 };
 
 export default function Grid({ cellSize, tab }: GridProps) {
+	console.log('Grid received tab:', tab);
+	if (!tab || !Array.isArray(tab) || tab.length === 0) {
+		return <div>No grid data available</div>;
+	}
+
 	return (
 		<div
 			className="grid d-flex flex-column align-items-center justify-content-center w-100"

@@ -1,15 +1,20 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import cors from 'cors';
 
 import dotenv from 'dotenv';
 import { URLS } from './urls.js';
 dotenv.config();
 
 const app = express();
+app.use(cors({ origin: '*' }));
+app.use(express.json());
 const BACKEND_SERVICES = (process.env.BACKEND_SERVICES || '').split(',');
 
 let explorationStartTime: Date | null = null;
+
+const watcherName = process.env.WATCHER_NAME || 'global-frontend';
 
 // Get the current file path and directory
 const __filename = fileURLToPath(import.meta.url);
@@ -97,14 +102,14 @@ app.get(URLS.AGENT_GRID(':agent'), async (req, res) => {
 		res.status(500).json({ error: 'Failed to fetch agent grid' });
 	}
 });
-
+// /^\/(?!api).*/
 app.get(/^\/(?!api).*/, (_req, res) => {
 	res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 const PORT = 3001;
 app.listen(PORT, () => {
-	console.log(`Global frontend running on http://localhost:${PORT}`);
+	console.log(`Global frontend running on http://0.0.0.0:${PORT}`);
 });
 
 // app.get('/api/agents', async (_req, res) => {

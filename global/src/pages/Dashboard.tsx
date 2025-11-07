@@ -10,6 +10,7 @@ import {
 	fetchGrid,
 } from '../utils/api';
 import LaunchExploration from '../components/LaunchExploration';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const Dashboard: React.FC = () => {
 	const SIZE = parseInt(import.meta.env.VITE_SIZE) || 50;
@@ -56,6 +57,11 @@ const Dashboard: React.FC = () => {
 		if (!selectedAgent) return;
 		const updateGrid = async () => {
 			const data = await fetchGrid(selectedAgent);
+			console.log('Fetched grid data:', data);
+			if (!data.grid || !Array.isArray(data.grid)) {
+				console.error('Invalid grid data:', data.grid);
+				return;
+			}
 			setGrid(data.grid);
 		};
 		updateGrid();
@@ -72,7 +78,9 @@ const Dashboard: React.FC = () => {
 				onSelectAgent={setSelectedAgent}
 			/>
 			<div className="border rounded p-3 bg-light">
-				<Grid cellSize={800 / SIZE} tab={grid} />
+				<ErrorBoundary>
+					<Grid cellSize={800 / SIZE} tab={grid} />
+				</ErrorBoundary>
 			</div>
 			<AgentStatus agentStatus={agentStatus} />
 		</div>
