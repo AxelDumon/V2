@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Global Exploration Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#4f46e5", // Indigo 600
+              "background-light": "#f3f4f6", // Cool Gray 100
+              "background-dark": "#111827", // Gray 900
+              "surface-light": "#ffffff", // White
+              "surface-dark": "#1f2937", // Gray 800
+              "text-light-primary": "#1f2937", // Gray 800
+              "text-dark-primary": "#f9fafb", // Gray 50
+              "text-light-secondary": "#6b7280", // Gray 500
+              "text-dark-secondary": "#d1d5db", // Gray 300
+              "border-light": "#e5e7eb", // Gray 200
+              "border-dark": "#374151", // Gray 700
+            },
+            fontFamily: {
+              display: ["Roboto", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem", // 8px
+              lg: "0.75rem", // 12px
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .grid-container {
+      display: grid;
+      grid-template-columns: repeat(60, 1fr);
+      grid-template-rows: repeat(34, 1fr);
+      aspect-ratio: 60 / 34;
+      max-width: 100%;
+      height: auto;
+      }
+      .grid-cell {
+      border: 1px solid;
+      }
+    </style>
+  </head>
+  <body class="font-display bg-background-light text-text-light-primary min-h-screen">
+    <div class="flex flex-col h-screen p-4 sm:p-6 lg:p-8">
+      <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 sm:pb-6 border-b border-border-light mb-4 sm:mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-text-light-primary">Global Exploration Dashboard</h1>
+          <div class="flex items-center space-x-2 mt-2 text-text-light-secondary">
+            <span class="material-icons text-lg">timer</span>
+            <p class="text-sm">Exploration Timer: <span class="font-medium text-text-light-primary">7286 seconds</span></p>
+          </div>
+        </div>
+        <div class="flex space-x-2 mt-4 sm:mt-0 w-full sm:w-auto">
+          <button class="flex-grow sm:flex-grow-0 flex items-center justify-center space-x-2 bg-primary text-white font-medium py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light">
+          <span class="material-icons text-xl">rocket_launch</span>
+          <span>Launch for All Machines</span>
+          </button>
+          <button class="flex-grow sm:flex-grow-0 flex items-center justify-center space-x-2 bg-surface-light border border-border-light text-text-light-primary font-medium py-2 px-4 rounded-lg shadow-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light">
+          <span class="material-icons text-xl">send</span>
+          <span>Launch for Selected</span>
+          </button>
+        </div>
+      </header>
+      <main class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 overflow-hidden">
+        <div class="lg:col-span-2 bg-surface-light p-4 sm:p-6 rounded-lg shadow-md flex flex-col items-center justify-center min-h-0">
+          <div class="w-full h-full flex items-center justify-center">
+            <div class="grid-container border border-border-light">
+              <script>
+                const gridContainer = document.querySelector('.grid-container');
+                for (let i = 0; i < 60 * 34; i++) {
+                  const cell = document.createElement('div');
+                  cell.className = 'grid-cell border-border-light';
+                  gridContainer.appendChild(cell);
+                }
+              </script>
+            </div>
+          </div>
+        </div>
+        <aside class="bg-surface-light p-4 sm:p-6 rounded-lg shadow-md flex flex-col">
+          <h2 class="text-xl font-bold mb-4 border-b border-border-light pb-3">Agent Status</h2>
+          <div class="flex-1 space-y-4 overflow-y-auto">
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+              <div class="flex items-center space-x-3">
+                <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="font-medium">agent001</span>
+              </div>
+              <span class="text-sm text-green-600 font-semibold">Online</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+              <div class="flex items-center space-x-3">
+                <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                </span>
+                <span class="font-medium">agent002</span>
+              </div>
+              <span class="text-sm text-blue-600 font-semibold">Exploring</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+              <div class="flex items-center space-x-3">
+                <span class="relative flex h-3 w-3">
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-400"></span>
+                </span>
+                <span class="font-medium text-text-light-secondary">agent003</span>
+              </div>
+              <span class="text-sm text-gray-500 font-semibold">Offline</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+              <div class="flex items-center space-x-3">
+                <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="font-medium">agent004</span>
+              </div>
+              <span class="text-sm text-green-600 font-semibold">Online</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+              <div class="flex items-center space-x-3">
+                <span class="relative flex h-3 w-3">
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span class="font-medium">agent005</span>
+              </div>
+              <span class="text-sm text-red-600 font-semibold">Error</span>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>

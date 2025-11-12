@@ -1,4 +1,5 @@
 import { BaseManager } from "./BaseManager/interfaces/BaseManager.js";
+import { SimulationManager } from "./utils/SimulationManager.js";
 
 export class Agent {
   _id?: string;
@@ -128,12 +129,33 @@ export class Agent {
 
     this.isExploring = false;
     this.endTime = new Date();
-    await Agent.getAgentRepository().updateExploringTime(false);
+    await Agent.getAgentRepository().update(this._id!, this);
+    // await Agent.getAgentRepository().updateExploringTime(false);
     console.log(
       `[${this.explore.name}] Agent ${this.name} finished exploring in ${(
         (this.endTime.getTime() - this.startTime.getTime()) /
         1000
       ).toFixed(2)} seconds`
+    );
+
+    // Wait for every agent to finish
+    while (true) {
+      const agents = await Agent.getAgentRepository().findAll();
+      const exploringAgents = agents.filter((a) => a.isExploring);
+      if (exploringAgents.length === 0) break;
+      console.log(
+        `[${
+          this.explore.name
+        }] Waiting for other agents to finish... (${exploringAgents
+          .map((a) => a.name)
+          .join(", ")})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+    console.log(`[${this.explore.name}] Saving simulation results...`);
+
+    await SimulationManager.addExperience(
+      await Agent.getBaseManager().getSimulationStats()
     );
   }
 }

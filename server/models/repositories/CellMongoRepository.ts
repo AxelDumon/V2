@@ -139,14 +139,6 @@ export class CellMongoRepository
 
   async initGrid(): Promise<number> {
     this.deleteAll();
-    // const cells: Cell[] = [];
-    // for (let x = 0; x < size; x++) {
-    //   for (let y = 0; y < size; y++) {
-    //     cells.push(new Cell(x, y, 0, [], undefined));
-    //   }
-    // }
-    // const result = await this.collection.insertMany(cells);
-    // console.log(`Inserted ${result.insertedCount} cells into the grid`);
     return 0;
   }
 }

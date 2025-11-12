@@ -5,11 +5,11 @@ import TriggerAllExplorationsButton from './TriggerAllExplorationsButton';
 
 const SIZE = Number(import.meta.env.VITE_SIZE);
 // const DELAY = Number(import.meta.env.VITE_DELAY);
-const PORT = import.meta.env.VITE_PORT || 3001;
+const PORT = import.meta.env.VITE_BASE_PORT || 3000;
 console.log('PORT:', PORT);
 // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const API_URL = 'http://localhost:' + PORT;
-const WS_URL = 'ws://localhost:' + (8080 + Number(PORT.toString().charAt(3)));
+const WS_URL = 'ws://localhost:' + (import.meta.env.VITE_BASE_WS_PORT || 8080);
 
 export default function App() {
 	const [tab, setTab] = useState<any[][]>(() =>

@@ -5,10 +5,11 @@ import { AgentRepository } from "../repositories/interfaces/AgentRepository.js";
 import { CellRepository } from "../repositories/interfaces/CellRepository.js";
 import { BaseManager } from "./interfaces/BaseManager.js";
 import { Cell } from "../Cell.js";
-import { Agent } from "../Agent.js";
 
 import dotenv from "dotenv";
 import { broadcastUpdate } from "../utils/WebSocket.js";
+import { Agent } from "../Agent.js";
+import { AgentStats, SimulationProps } from "../utils/types.js";
 dotenv.config();
 
 export class MongoManager extends BaseManager {
@@ -81,7 +82,7 @@ export class MongoManager extends BaseManager {
 
   // Methods that need and the cellRepository and agentRepository
 
-  async getAgentStats(): Promise<any> {
+  async getAgentStats(): Promise<AgentStats[]> {
     try {
       // Step 1: Aggregate stats from the cell collection
       const stats = await this.cellRepository
@@ -106,12 +107,49 @@ export class MongoManager extends BaseManager {
               new Date(agent.startTime).getTime()) /
             1000;
         }
-        return { ...stat, name: agent?.name || stat._id, duration };
+        return {
+          ...stat,
+          name: agent?.name || stat._id || "Unknown",
+          duration: duration || 0,
+          tilesExplored: stat.count,
+          offlineTime: 0,
+          startTime: agent?.startTime,
+          endTime: agent?.endTime,
+        };
       });
 
       return statsWithTime;
     } catch (error) {
       console.error("Failed to get agent stats:", error);
+      throw error;
+    }
+  }
+
+  async getSimulationStats(): Promise<SimulationProps> {
+    try {
+      const gridSideSize = CellMongoRepository.SIZE;
+      const totalGridSize = gridSideSize * gridSideSize;
+
+      const agentsStats = await this.getAgentStats();
+
+      const explorationTime = agentsStats.reduce((max, agent) => {
+        if (agent.duration && agent.duration > max) {
+          return agent.duration;
+        }
+        return max;
+      }, 0);
+      const offlineTime = Number(process.env.OFFLINE_TIME) || 0;
+
+      return {
+        gridSideSize,
+        totalGridSize,
+        agentsStats,
+        explorationTime,
+        offlineTime,
+        dbName: this.db.databaseName,
+      };
+    } catch (error) {
+      console.error("Failed to get simulation stats:", error);
       throw error;
     }
   }

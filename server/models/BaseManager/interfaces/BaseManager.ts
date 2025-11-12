@@ -1,5 +1,6 @@
 import { AgentRepository } from "../../repositories/interfaces/AgentRepository.js";
 import { CellRepository } from "../../repositories/interfaces/CellRepository.js";
+import { SimulationProps } from "../../utils/types.js";
 
 export abstract class BaseManager {
   abstract cellRepository: CellRepository;
@@ -13,4 +14,5 @@ export abstract class BaseManager {
 
   // Methods that need and the cellRepository and agentRepository
   abstract getAgentStats(): Promise<any>;
+  abstract getSimulationStats(): Promise<SimulationProps>;
 }
