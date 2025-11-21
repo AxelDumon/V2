@@ -15,31 +15,49 @@ dotenv.config();
 export class MongoManager extends BaseManager {
   cellRepository: CellMongoRepository;
   agentRepository: AgentMongoRepository;
-  mainClient: MongoClient;
-  secondaryClient: MongoClient;
+  replicationClient: MongoClient;
+  localClient: MongoClient;
   db: Db;
   connectionType: "repl" | "standalone" = "repl";
+  checkIntervalId?: NodeJS.Timeout;
+  replicateIntervalId?: NodeJS.Timeout;
+
+  static repl_uri: string = process.env.REPL_MONGO_URI!;
+  static standalone_uri: string =
+    process.env.STANDALONE_MONGO_URI ||
+    "mongodb://localhost:27017?replicaSet=localRset";
 
   constructor() {
     super();
     this.cellRepository = new CellMongoRepository({} as Collection<Cell>);
     this.agentRepository = new AgentMongoRepository({} as Collection<Agent>);
-    this.mainClient = {} as MongoClient;
-    this.secondaryClient = {} as MongoClient;
+    this.replicationClient = {} as MongoClient;
+    this.localClient = {} as MongoClient;
     this.db = {} as Db;
+    this.checkIntervalId = undefined;
+    this.replicateIntervalId = undefined;
   }
 
   async ManagerFactory(): Promise<MongoManager> {
     console.log("Creating MongoManager instance");
     const manager = new MongoManager();
-    await manager.connectToDatabase();
+    const options: any = { serverApi: { version: "1" } };
+    try {
+      this.replicationClient = new MongoClient(MongoManager.repl_uri, options);
+      this.localClient = new MongoClient(MongoManager.standalone_uri, options);
+      console.log("Connecting to replication client...");
+      await this.replicationClient.connect();
+      console.log("Replication client connected.");
+
+      console.log("Connecting to local client...");
+      await this.localClient.connect();
+      console.log("Local client connected.");
+    } catch (e) {
+      console.error("Failed to connect to MongoDB clients", e);
+      throw e;
+    }
+    await manager.manageConnection();
     await manager.initBase();
-    setInterval(async () => {
-      await manager.checkReplicaSetHealth();
-    }, 3000);
-    setInterval(async () => {
-      await manager.replicateDataToStandalone();
-    }, 5000);
     return manager;
   }
 
@@ -52,24 +70,33 @@ export class MongoManager extends BaseManager {
     }
   }
 
-  async connectToDatabase(): Promise<void> {
-    let uri =
-      this.connectionType === "repl"
-        ? process.env.REPL_MONGO_URI
-        : process.env.STANDALONE_MONGO_URI || "mongodb://localhost:27017";
-    let options: any = { serverApi: { version: "1" } };
-    try {
-      this.mainClient = new MongoClient(uri!, options);
-      await this.mainClient.connect();
-      this.db = this.mainClient.db("v2grid");
-      console.log("Connected to database:", this.db.databaseName);
+  manageDBReference(): void {
+    console.log("Managing DB reference...");
+    console.log("Connection type:", this.connectionType);
+    if (this.connectionType === "repl") {
+      console.log("Replication client:", this.replicationClient);
+      this.db = this.replicationClient.db("v2grid");
+    } else {
+      console.log("Local client:", this.localClient);
+      this.db = this.localClient.db("v2grid");
+    }
+    this.manageCollectionReferences();
+  }
 
-      this.cellRepository = new CellMongoRepository(
-        this.db.collection("cells")
-      );
-      this.agentRepository = new AgentMongoRepository(
-        this.db.collection("agents")
-      );
+  manageCollectionReferences(): void {
+    this.cellRepository = new CellMongoRepository(this.db.collection("cells"));
+    this.agentRepository = new AgentMongoRepository(
+      this.db.collection("agents")
+    );
+  }
+
+  async manageConnection(): Promise<void> {
+    try {
+      this.clearIntervals();
+      await this.replicationClient.connect();
+      await this.localClient.connect();
+      this.manageDBReference();
+      console.log("Connected to database:", this.db.databaseName);
       this.db
         .watch([], { fullDocument: "updateLookup" })
         .on("change", (change) => {
@@ -77,7 +104,19 @@ export class MongoManager extends BaseManager {
             broadcastUpdate(change.fullDocument);
           } else {
           }
+        })
+        .on("error", (err) => {
+          console.error("Change stream error:", err);
+        })
+        .on("close", () => {
+          console.warn("Change stream closed, maybe retrying...");
         });
+      this.checkIntervalId = setInterval(async () => {
+        await this.checkReplicaSetHealth();
+      }, 3000);
+      this.replicateIntervalId = setInterval(async () => {
+        await this.replicateDataToStandalone();
+      }, 5000);
     } catch (e) {
       console.error("Failed to connect to MongoDB", e);
       throw e;
@@ -166,9 +205,19 @@ export class MongoManager extends BaseManager {
     }
   }
 
+  clearIntervals(): void {
+    if (this.checkIntervalId !== undefined) {
+      clearInterval(this.checkIntervalId);
+      this.checkIntervalId = undefined;
+    }
+    if (this.replicateIntervalId !== undefined) {
+      clearInterval(this.replicateIntervalId);
+      this.replicateIntervalId = undefined;
+    }
+  }
+
   async checkReplicaSetHealth() {
-    const replUri = process.env.REPL_MONGO_URI;
-    const testClient = new MongoClient(replUri!);
+    const testClient = new MongoClient(MongoManager.repl_uri);
 
     try {
       await testClient.connect();
@@ -186,22 +235,16 @@ export class MongoManager extends BaseManager {
         console.log(
           "Replica set is healthy with at least 3 members. Switching to repl mode..."
         );
+
         this.connectionType = "repl";
-        await this.mainClient.close();
-        await this.connectToDatabase();
-        this.secondaryClient = new MongoClient(
-          process.env.STANDALONE_MONGO_URI || "mongodb://localhost:27017"
-        );
-        await this.secondaryClient.connect();
+        await this.manageConnection();
         await this.replicateDataToRepl();
-      } else {
-        console.error(
+      } else if (healthyMembers.length < 3 && this.connectionType === "repl") {
+        console.log(
           "Replica set is unhealthy. Less than 3 members are healthy. Switching to standalone mode..."
         );
         this.connectionType = "standalone";
-        await this.secondaryClient.close();
-        await this.mainClient.close();
-        await this.connectToDatabase();
+        await this.manageConnection();
       }
     } catch (error) {
       console.error("Failed to check replica set health:", error);
@@ -211,23 +254,23 @@ export class MongoManager extends BaseManager {
   }
 
   async replicateDataToStandalone(): Promise<void> {
+    // Replicate data from repl to standalone
     if (this.connectionType !== "repl") {
       console.log("Not in repl mode. Skipping data replication.");
       return;
     }
 
     try {
-      await this.secondaryClient.connect();
-      const standaloneDb = this.secondaryClient.db("v2grid");
       const cells = await this.cellRepository.findAll();
       const agents = await this.agentRepository.findAll();
       // Replicate Cells
 
+      const standaloneDb = this.localClient.db("v2grid");
       const standaloneCellRepo = new CellMongoRepository(
         standaloneDb.collection("cells")
       );
-      await standaloneCellRepo.getCollection().deleteMany({});
       if (cells.length > 0) {
+        await standaloneCellRepo.getCollection().deleteMany({});
         await standaloneCellRepo.getCollection().insertMany(cells);
       }
 
@@ -235,8 +278,8 @@ export class MongoManager extends BaseManager {
       const standaloneAgentRepo = new AgentMongoRepository(
         standaloneDb.collection("agents")
       );
-      await standaloneAgentRepo.getCollection().deleteMany({});
       if (agents.length > 0) {
+        await standaloneAgentRepo.getCollection().deleteMany({});
         await standaloneAgentRepo.getCollection().insertMany(agents);
       }
 
@@ -252,13 +295,14 @@ export class MongoManager extends BaseManager {
       return;
     }
     try {
-      await this.secondaryClient.connect();
-      const replDb = this.secondaryClient.db("v2grid");
+      const localDB = this.localClient.db("v2grid");
       const distantCells = await this.cellRepository.findAll();
 
       // Replicate Cells
-      const replCellRepo = new CellMongoRepository(replDb.collection("cells"));
-      const localCells = await replCellRepo.findAll();
+      const localCellRepo = new CellMongoRepository(
+        localDB.collection("cells")
+      );
+      const localCells = await localCellRepo.findAll();
       const cellsToInsert = distantCells.filter(
         (distantCell) =>
           !localCells.some(

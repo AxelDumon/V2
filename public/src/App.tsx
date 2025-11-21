@@ -73,6 +73,10 @@ export default function App() {
 	}
 
 	function connectWebSocket() {
+		if (wsRef.current !== null) {
+			wsRef.current.close();
+		}
+
 		const ws = new WebSocket(WS_URL);
 		wsRef.current = ws;
 
