@@ -1,4 +1,5 @@
 import { BaseManager } from "./BaseManager/interfaces/BaseManager.js";
+import { Cell } from "./Cell.js";
 import { SimulationManager } from "./utils/SimulationManager.js";
 
 export class Agent {
@@ -35,9 +36,15 @@ export class Agent {
 
     this.startTime = new Date();
     this.endTime = undefined;
-
-    await Agent.getAgentRepository().update(this._id!, this);
-    // Agent.getAgentRepository().updateExploringTime(true);
+    try {
+      await Agent.getAgentRepository().update(this._id!, this);
+      // Agent.getAgentRepository().updateExploringTime(true);
+    } catch (e) {
+      console.error(
+        `[${this.explore.name}] Error updating agent status (Start):`,
+        e
+      );
+    }
 
     // Cell to discover
     let cell = await Agent.getCellRepository().getRandomUndiscoveredCell();
@@ -45,7 +52,15 @@ export class Agent {
       console.log(`[${this.explore.name}] No undiscovered cells left`);
       this.isExploring = false;
       this.endTime = new Date();
-      await Agent.getAgentRepository().updateExploringTime(false);
+      try {
+        await Agent.getAgentRepository().update(this._id!, this);
+        await Agent.getAgentRepository().updateExploringTime(false);
+      } catch (e) {
+        console.error(
+          `[${this.explore.name}] Error updating agent status (StartFull):`,
+          e
+        );
+      }
       return;
     }
 
@@ -54,9 +69,23 @@ export class Agent {
     let y = cell.y;
 
     while (true) {
+      const repo = Agent.getCellRepository();
+      console.log(repo === Agent.getCellRepository());
       let foundFrontier = false;
-      const neighbors =
-        await Agent.getCellRepository().getUndiscoveredNeighbors(x, y);
+      let neighbors: Cell[] = [];
+      try {
+        neighbors = await Agent.getCellRepository().getUndiscoveredNeighbors(
+          x,
+          y
+        );
+      } catch (e) {
+        console.error(
+          `[${this.explore.name}] Error getting undiscovered neighbors of (${x}, ${y}):`,
+          e
+        );
+        await new Promise((resolve) => setTimeout(resolve, DELAY));
+        continue;
+      }
       if (neighbors && neighbors.length > 0) {
         const undiscoveredCell =
           neighbors[Math.floor(Math.random() * neighbors.length)];
@@ -129,8 +158,15 @@ export class Agent {
 
     this.isExploring = false;
     this.endTime = new Date();
-    await Agent.getAgentRepository().update(this._id!, this);
-    // await Agent.getAgentRepository().updateExploringTime(false);
+    try {
+      await Agent.getAgentRepository().update(this._id!, this);
+      // await Agent.getAgentRepository().updateExploringTime(false);
+    } catch (e) {
+      console.error(
+        `[${this.explore.name}] Error updating agent status (End):`,
+        e
+      );
+    }
     console.log(
       `[${this.explore.name}] Agent ${this.name} finished exploring in ${(
         (this.endTime.getTime() - this.startTime.getTime()) /
@@ -140,22 +176,39 @@ export class Agent {
 
     // Wait for every agent to finish
     while (true) {
-      const agents = await Agent.getAgentRepository().findAll();
-      const exploringAgents = agents.filter((a) => a.isExploring);
-      if (exploringAgents.length === 0) break;
-      console.log(
-        `[${
-          this.explore.name
-        }] Waiting for other agents to finish... (${exploringAgents
-          .map((a) => a.name)
-          .join(", ")})`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      try {
+        const agents = await Agent.getAgentRepository().findAll();
+        const exploringAgents = agents.filter((a) => a.isExploring);
+        if (exploringAgents.length === 0) break;
+        console.log(
+          `[${
+            this.explore.name
+          }] Waiting for other agents to finish... (${exploringAgents
+            .map((a) => a.name)
+            .join(", ")})`
+        );
+      } catch (e) {
+        console.error(
+          `[${this.explore.name}] Error checking other agents' status:`,
+          e
+        );
+      } finally {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
     }
     console.log(`[${this.explore.name}] Saving simulation results...`);
 
-    await SimulationManager.addExperience(
-      await Agent.getBaseManager().getSimulationStats()
-    );
+    while (true) {
+      try {
+        await SimulationManager.addExperience(
+          await Agent.getBaseManager().getSimulationStats()
+        );
+      } catch (e) {
+        console.error(
+          `[${this.explore.name}] Error saving simulation results, retrying... error:`,
+          e
+        );
+      }
+    }
   }
 }

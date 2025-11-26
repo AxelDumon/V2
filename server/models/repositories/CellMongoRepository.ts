@@ -22,119 +22,146 @@ export class CellMongoRepository
     increment: number,
     agent: string
   ): Promise<Cell | null> {
-    return (
-      await this.collection.findOneAndUpdate(
-        { _id: `${x}-${y}` } as Filter<Cell>,
-        {
-          $inc: { valeur: increment },
-          $addToSet: { agents: agent },
-          $set: { x: x, y: y },
-        },
-        { returnDocument: "after", includeResultMetadata: true, upsert: true }
-      )
-    ).value as Cell;
+    try {
+      console.log(
+        `[${this.updateCell.name}] Updating cell at (${x}, ${y}) with increment ${increment} by agent ${agent}`
+      );
+      return (
+        await this.collectionGetter().findOneAndUpdate(
+          { _id: `${x}-${y}` } as Filter<Cell>,
+          {
+            $inc: { valeur: increment },
+            $addToSet: { agents: agent },
+            $set: { x: x, y: y },
+          },
+          { returnDocument: "after", includeResultMetadata: true, upsert: true }
+        )
+      ).value as Cell;
+    } catch (error) {
+      console.error(
+        `[${this.updateCell.name}] Error updating cell at (${x}, ${y}):`,
+        error
+      );
+      throw error;
+    }
   }
 
   async getRandomUndiscoveredCell(): Promise<Cell | null> {
-    const foundCells: CellDocument[] = (await this.collection
-      .aggregate([{ $match: { valeur: { $gt: 0 } } }])
-      .toArray()) as CellDocument[];
-    console.log(
-      `[getRandomUndiscoveredCell] Found ${foundCells.length} discovered cells.`
-    );
-
-    // If all cells are discovered, return null
-    if (
-      foundCells.length >=
-      CellMongoRepository.SIZE * CellMongoRepository.SIZE
-    ) {
+    try {
+      const foundCells: CellDocument[] = (await this.collectionGetter()
+        .aggregate([{ $match: { valeur: { $gt: 0 } } }])
+        .toArray()) as CellDocument[];
       console.log(
-        "[getRandomUndiscoveredCell] All cells are discovered. Returning null."
+        `[getRandomUndiscoveredCell] Found ${foundCells.length} discovered cells.`
       );
-      return null;
-    }
 
-    const boolGrid = CellMongoRepository.BOOL_GRID.slice();
-    // Update BOOL_GRID based on found cells
-    foundCells.forEach((cell) => {
-      boolGrid[cell.x * CellMongoRepository.SIZE + cell.y] = true;
-    });
-
-    const unexploredCells: { x: number; y: number }[] = [];
-    boolGrid.forEach((cell, index) => {
-      if (!cell) {
-        const x = Math.floor(index / CellMongoRepository.SIZE);
-        const y = index % CellMongoRepository.SIZE;
-        unexploredCells.push({ x, y });
+      // If all cells are discovered, return null
+      if (
+        foundCells.length >=
+        CellMongoRepository.SIZE * CellMongoRepository.SIZE
+      ) {
+        console.log(
+          "[getRandomUndiscoveredCell] All cells are discovered. Returning null."
+        );
+        return null;
       }
-    });
 
-    const chosenCell =
-      unexploredCells[Math.floor(Math.random() * unexploredCells.length)];
+      const boolGrid = CellMongoRepository.BOOL_GRID.slice();
+      // Update BOOL_GRID based on found cells
+      foundCells.forEach((cell) => {
+        boolGrid[cell.x * CellMongoRepository.SIZE + cell.y] = true;
+      });
 
-    console.log(
-      `[getRandomUndiscoveredCell] Chosen cell: x:${chosenCell.x}, y:${chosenCell.y}`
-    );
+      const unexploredCells: { x: number; y: number }[] = [];
+      boolGrid.forEach((cell, index) => {
+        if (!cell) {
+          const x = Math.floor(index / CellMongoRepository.SIZE);
+          const y = index % CellMongoRepository.SIZE;
+          unexploredCells.push({ x, y });
+        }
+      });
 
-    return new Cell(
-      chosenCell.x,
-      chosenCell.y,
-      0,
-      [],
-      `${chosenCell.x}-${chosenCell.y}`
-    );
+      const chosenCell =
+        unexploredCells[Math.floor(Math.random() * unexploredCells.length)];
+
+      console.log(
+        `[getRandomUndiscoveredCell] Chosen cell: x:${chosenCell.x}, y:${chosenCell.y}`
+      );
+
+      return new Cell(
+        chosenCell.x,
+        chosenCell.y,
+        0,
+        [],
+        `${chosenCell.x}-${chosenCell.y}`
+      );
+    } catch (error) {
+      console.error(
+        `[${this.getRandomUndiscoveredCell.name}] Error getting random undiscovered cell:`,
+        error
+      );
+      throw error;
+    }
   }
 
   async getUndiscoveredNeighbors(x: number, y: number): Promise<Cell[]> {
-    // Define potential neighbor coordinates
-    const neighbors = [
-      { x: x - 1, y: y },
-      { x: x + 1, y: y },
-      { x: x, y: y - 1 },
-      { x: x, y: y + 1 },
-      { x: x - 1, y: y - 1 },
-      { x: x - 1, y: y + 1 },
-      { x: x + 1, y: y - 1 },
-      { x: x + 1, y: y + 1 },
-    ];
+    try {
+      // Define potential neighbor coordinates
+      const neighbors = [
+        { x: x - 1, y: y },
+        { x: x + 1, y: y },
+        { x: x, y: y - 1 },
+        { x: x, y: y + 1 },
+        { x: x - 1, y: y - 1 },
+        { x: x - 1, y: y + 1 },
+        { x: x + 1, y: y - 1 },
+        { x: x + 1, y: y + 1 },
+      ];
 
-    // Filter out neighbors that are out of bounds
-    const validNeighbors = neighbors.filter(
-      (n) =>
-        n.x >= 0 &&
-        n.x < CellMongoRepository.SIZE &&
-        n.y >= 0 &&
-        n.y < CellMongoRepository.SIZE
-    );
-
-    // Upsert neighbors to ensure they exist
-    for (const neighbor of validNeighbors) {
-      await this.collection.updateOne(
-        { _id: `${neighbor.x}-${neighbor.y}` } as Filter<Cell>,
-        {
-          $setOnInsert: {
-            _id: `${neighbor.x}-${neighbor.y}`,
-            x: neighbor.x,
-            y: neighbor.y,
-            valeur: 0,
-            agents: [],
-          },
-        },
-        { upsert: true }
+      // Filter out neighbors that are out of bounds
+      const validNeighbors = neighbors.filter(
+        (n) =>
+          n.x >= 0 &&
+          n.x < CellMongoRepository.SIZE &&
+          n.y >= 0 &&
+          n.y < CellMongoRepository.SIZE
       );
-    }
 
-    // Fetch neighbors that are still undiscovered (valeur: 0)
-    return (await this.collection
-      .aggregate([
-        {
-          $match: {
-            valeur: 0,
-            $or: validNeighbors.map((n) => ({ _id: `${n.x}-${n.y}` })),
+      // Upsert neighbors to ensure they exist
+      for (const neighbor of validNeighbors) {
+        await this.collectionGetter().updateOne(
+          { _id: `${neighbor.x}-${neighbor.y}` } as Filter<Cell>,
+          {
+            $setOnInsert: {
+              _id: `${neighbor.x}-${neighbor.y}`,
+              x: neighbor.x,
+              y: neighbor.y,
+              valeur: 0,
+              agents: [],
+            },
           },
-        },
-      ])
-      .toArray()) as Cell[];
+          { upsert: true }
+        );
+      }
+
+      // Fetch neighbors that are still undiscovered (valeur: 0)
+      return (await this.collectionGetter()
+        .aggregate([
+          {
+            $match: {
+              valeur: 0,
+              $or: validNeighbors.map((n) => ({ _id: `${n.x}-${n.y}` })),
+            },
+          },
+        ])
+        .toArray()) as Cell[];
+    } catch (error) {
+      console.error(
+        `[${this.getUndiscoveredNeighbors.name}] Error getting undiscovered neighbors for cell at (${x}, ${y}):`,
+        error
+      );
+      throw error;
+    }
   }
 
   async initGrid(): Promise<number> {

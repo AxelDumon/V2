@@ -24,7 +24,7 @@ export class AgentMongoRepository
     console.log(`[updateExploringTime] Filter: ${JSON.stringify(filter)}`);
     console.log(`[updateExploringTime] Update: ${JSON.stringify(update)}`);
     console.log(`[updateExploringTime] Options: ${JSON.stringify(options)}`);
-    const result = await this.collection.findOneAndUpdate(
+    const result = await this.collectionGetter().findOneAndUpdate(
       filter,
       update,
       options

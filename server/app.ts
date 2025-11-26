@@ -1,30 +1,18 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-// import { WebSocketServer } from "ws";
+import express from "express";
+import { MongoManager } from "./models/BaseManager/MongoManager.js";
+import cellsRouter from "./routes/cells.js";
+import exploreRouter from "./routes/explore.js";
+import initRouter from "./routes/init.js";
+import agentsRouter from "./routes/agents.js";
+import statusRouter from "./routes/status.js";
+import cors from "cors";
+import { Agent } from "./models/Agent.js";
+import { WebSocketServer } from "ws";
+
 const wsport = Number(process.env.BASE_WS_PORT) || 8080;
-// const wss = new WebSocketServer({
-//   port: wsport,
-
-// });
-
-// wss.on("connection", (ws) => {
-//   console.log("[WSS] Client connected");
-//   ws.onopen = () => {
-//     console.log("Connected to WebSocket server");
-//   };
-//   ws.on("message", (message) => {
-//     console.log("Received message:", message.toString());
-//   });
-//   ws.on("close", () => {
-//     console.log("Client disconnected");
-//   });
-//   ws.on("error", (error) => {
-//     console.error("WebSocket error:", error);
-//   });
-// });
-
-// export default wss;
 
 const wss = new WebSocketServer({
   port: wsport,
@@ -68,17 +56,6 @@ void start();
 
 export default wss;
 
-import express from "express";
-import cellsRouter from "./routes/cells.js";
-import exploreRouter from "./routes/explore.js";
-import initRouter from "./routes/init.js";
-import agentsRouter from "./routes/agents.js";
-import statusRouter from "./routes/status.js";
-import cors from "cors";
-import { Agent } from "./models/Agent.js";
-import { MongoManager } from "./models/BaseManager/MongoManager.js";
-import { WebSocketServer } from "ws";
-
 const app = express();
 const PORT = Number(process.env.BASE_PORT) || 3000;
 
@@ -111,3 +88,14 @@ export const agent = new Agent(name, name);
 Agent.setBaseManager(await new MongoManager().ManagerFactory());
 
 startServer().catch(console.dir);
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception thrown:", err);
+});
+
+// import { MongoRsetFailover } from "./tests/MongoRsetFailover.js";
+// MongoRsetFailover.testCollectionChange().catch(console.dir);
+// MongoRsetFailover.testConnectionWhenOfflineOnLocal().catch(console.dir);

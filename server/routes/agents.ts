@@ -1,6 +1,5 @@
 import express from "express";
 import { Agent } from "../models/Agent.js";
-import { agent } from "../app.js";
 
 const router = express.Router();
 
@@ -15,7 +14,11 @@ router.get("/", async (_req, res) => {
 
 router.get("/is-exploring", async (_req, res) => {
   try {
-    res.json({ isExploring: agent.isExploring || false });
+    const agents = await Agent.getAgentRepository().findAll();
+    if (agents.length === 0) {
+      return res.json({ isExploring: false });
+    }
+    res.json({ isExploring: agents.some((a) => a.isExploring) });
   } catch (err: Error | any) {
     res.status(500).json({ error: err.message });
   }

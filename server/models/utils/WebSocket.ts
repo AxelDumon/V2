@@ -1,7 +1,7 @@
 import wss from "../../app.js";
 
 export function broadcastUpdate(data: any) {
-  console.log("[WebSocket] Broadcasting update:", data);
+  // console.log("[WebSocket] Broadcasting update:", data);
   data.type = "db_change";
   wss.clients.forEach((client) => {
     if (client.readyState === client.OPEN) {
