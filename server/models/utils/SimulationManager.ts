@@ -42,7 +42,7 @@ export class SimulationManager {
       // Write back
       await fs.promises.writeFile(
         path,
-        JSON.stringify(simulationsManager),
+        JSON.stringify(simulationsManager.simulations),
         "utf8"
       );
       console.log(`Experience added successfully to ${path}`);

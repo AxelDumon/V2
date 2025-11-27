@@ -69,8 +69,6 @@ export class Agent {
     let y = cell.y;
 
     while (true) {
-      const repo = Agent.getCellRepository();
-      console.log(repo === Agent.getCellRepository());
       let foundFrontier = false;
       let neighbors: Cell[] = [];
       try {
@@ -203,6 +201,10 @@ export class Agent {
         await SimulationManager.addExperience(
           await Agent.getBaseManager().getSimulationStats()
         );
+        console.log(
+          `[${this.explore.name}] Simulation results saved successfully`
+        );
+        break;
       } catch (e) {
         console.error(
           `[${this.explore.name}] Error saving simulation results, retrying... error:`,
