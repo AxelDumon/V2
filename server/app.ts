@@ -85,15 +85,32 @@ export const agent = new Agent(name, name);
 // };
 
 // LINE TO CHANGE IF YOU CHANGE DB
-Agent.setBaseManager(await new MongoManager().ManagerFactory());
+const mongoManager = await new MongoManager().ManagerFactory();
+Agent.setBaseManager(mongoManager);
 
 startServer().catch(console.dir);
+
+const shutdown = async (code = 0) => {
+  console.log("Shutting down server...");
+  try {
+    await mongoManager.closeAll();
+  } catch (err) {
+    console.error("Error during shutdown:", err);
+  }
+  try {
+    wss.close();
+  } catch (err) {}
+  process.exit(code);
+};
+process.on("SIGINT", () => shutdown(0));
+process.on("SIGTERM", () => shutdown(0));
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception thrown:", err);
+  // shutdown(1);
 });
 
 // import { MongoRsetFailover } from "./tests/MongoRsetFailover.js";

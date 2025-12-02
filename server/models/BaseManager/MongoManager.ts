@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient } from "mongodb";
+import { Collection, Db, MongoClient, ChangeStream } from "mongodb";
 import { AgentMongoRepository } from "../repositories/AgentMongoRepository.js";
 import { CellMongoRepository } from "../repositories/CellMongoRepository.js";
 import { AgentRepository } from "../repositories/interfaces/AgentRepository.js";
@@ -21,6 +21,7 @@ export class MongoManager extends BaseManager {
   connectionType: "repl" | "standalone" = "repl";
   checkIntervalId?: NodeJS.Timeout;
   replicateIntervalId?: NodeJS.Timeout;
+  changeStream?: ChangeStream;
 
   static repl_uri: string = process.env.REPL_MONGO_URI!;
   static standalone_uri: string =
@@ -157,20 +158,38 @@ export class MongoManager extends BaseManager {
       // Manage the DB reference based on the connection type
       await this.manageDBReference();
       console.log("Connected to database:", this.db.databaseName);
-      this.db
-        .watch([], { fullDocument: "updateLookup" })
+
+      try {
+        if (this.changeStream) {
+          try {
+            await this.changeStream.close();
+            this.changeStream = undefined;
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.warn("Failed to close existing change stream:", e);
+      }
+
+      this.changeStream = this.db.watch([], { fullDocument: "updateLookup" });
+
+      this.changeStream
         .on("change", (change) => {
           if ("fullDocument" in change && change.fullDocument) {
             // console.log("Change detected:", change.fullDocument);
             broadcastUpdate(change.fullDocument);
-          } else {
           }
         })
         .on("error", (err) => {
           console.error("Change stream error:", err);
+          try {
+            this.changeStream?.close();
+          } catch (e) {
+            this.changeStream = undefined;
+          }
         })
         .on("close", () => {
           console.warn("Change stream closed, maybe retrying...");
+          this.changeStream = undefined;
         });
 
       // Set up periodic checks and replication based on connection type
@@ -185,6 +204,41 @@ export class MongoManager extends BaseManager {
       console.error("Failed to connect to MongoDB", e);
     }
     console.log("Connected to MongoDB");
+  }
+
+  async closeAll(): Promise<void> {
+    try {
+      this.clearIntervals();
+
+      if (this.changeStream) {
+        try {
+          await this.changeStream.close();
+        } catch (e) {
+          console.warn("Error closing changeStream:", e);
+        }
+        this.changeStream = undefined;
+      }
+
+      if (this.replicationClient) {
+        try {
+          await this.replicationClient.close();
+        } catch (e) {
+          console.warn("Error closing replicationClient:", e);
+        }
+      }
+
+      if (this.localClient) {
+        try {
+          await this.localClient.close();
+        } catch (e) {
+          console.warn("Error closing localClient:", e);
+        }
+      }
+
+      console.log("MongoManager closed all clients and resources.");
+    } catch (err) {
+      console.error("Error during closeAll():", err);
+    }
   }
 
   getCellRepository(): CellRepository {
