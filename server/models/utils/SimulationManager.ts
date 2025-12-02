@@ -9,7 +9,7 @@ interface SimulationManagerProps {
 }
 
 export class SimulationManager {
-  static RESULTS_FOLDER: fs.PathLike = `/tmp/exploration-${
+  static RESULTS_FOLDER: fs.PathLike = `/opt/app/exploration-${
     process.env.SIMULATION_NAME || "default"
   }.json`;
   static WRITE_OPTIONS = { flag: "a", mode: "644" };

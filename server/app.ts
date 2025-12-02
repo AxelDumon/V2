@@ -12,7 +12,7 @@ import cors from "cors";
 import { Agent } from "./models/Agent.js";
 import { WebSocketServer } from "ws";
 
-const wsport = Number(process.env.BASE_WS_PORT) || 8080;
+const wsport = Number(process.env.BASE_WS_PORT) || 4860;
 
 const wss = new WebSocketServer({
   port: wsport,

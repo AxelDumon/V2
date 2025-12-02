@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default {  
     server: {
         host: '0.0.0.0',
-        port: 8000,
+        port: 5016,
     },
     build: {
         outDir: './build',
