@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/bin/bash
 # filepath: /home/axel/Code/V2/compose-restart.sh
 
@@ -27,6 +28,11 @@ podman stop -t 2 $MACHINE_NAMES
 
 # Bring down the containers and volumes
 echo "Bringing down containers and volumes..."
+=======
+podman stop -t 2 machine3
+podman stop -t 2 machine2
+podman stop -t 2 machine1
+>>>>>>> CouchDB
 podman-compose down -v
 
 # Rebuild and bring up the containers

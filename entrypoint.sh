@@ -1,62 +1,114 @@
 #!/bin/bash
 # filepath: /home/axel/Code/V2/entrypoint.sh
 
-echo "[entrypoint] Starting MongoDB instance..."
+echo "[entrypoint] Setting Erlang magic cookie..."
+echo "-setcookie ${COUCHDB_ERL_COOKIE}" >> /opt/couchdb/etc/vm.args
 
-# Start MongoDB with replica set configuration
-mongod --replSet shard1 --port 27018 --bind_ip_all --dbpath /data/db &
+echo "[entrypoint] Configuring CouchDB's admin..."
+echo "[admins]" >> /opt/couchdb/etc/local.ini
+echo "admin = password" >> /opt/couchdb/etc/local.ini
 
-# Wait for the local MongoDB instance to be ready
-echo "[entrypoint] Waiting for MongoDB to be ready on this machine..."
-until mongosh --port 27018 --eval "db.runCommand({ ping: 1 })"; do
-  echo "Waiting for MongoDB on this machine to be ready..."
-  sleep 2
+echo "\n" >> /opt/couchdb/etc/local.ini
+
+# https://docs.couchdb.org/en/stable/config/cluster.html
+echo "[entrypoint] Configuring CouchDB for clustering..."
+echo "[cluster]" >> /opt/couchdb/etc/local.ini
+echo "q = 1" >> /opt/couchdb/etc/local.ini
+echo "n = 1" >> /opt/couchdb/etc/local.ini
+
+echo "\n" >> /opt/couchdb/etc/local.ini
+
+# https://stackoverflow.com/questions/44643330/couchdb-difference-between-max-replication-retry-count-and-retries-per-request
+echo "[entrypoint] Configuring CouchDB replication settings..."
+echo "[replicator]" >> /opt/couchdb/etc/local.inis
+# To make the retry backoff smaller and thus retries faster, set the max_history to a lower value. (default is 20)
+echo "max_history = 8" >> /opt/couchdb/etc/local.ini
+# Maximum number of times a replication will be retried before giving up (default is 10)
+# The wait is exponential, so 10 retries can take a long time. That's why we set it to 7.
+echo "retries_per_requset = 7" >> /opt/couchdb/etc/local.ini
+# Maximum number of replications that can run at the same time (default is 500)
+# echo "max_jobs = 9999999" >> /opt/couchdb/etc/local.ini
+echo "max_jobs = 20" >> /opt/couchdb/etc/local.ini # 20 concurrent replications max
+echo "interval = 60000" >> /opt/couchdb/etc/local.ini # 60s
+echo "max_chrun = 10" >> /opt/couchdb/etc/local.ini # 10 changes per run
+
+echo "[entrypoint] Pre-start: Initializing CouchDB system databases..."
+/opt/couchdb/bin/couchdb -n &
+# couchdb &
+
+echo "[entrypoint] Waiting for CouchDB to be ready..."
+until curl -X GET 'http://127.0.0.1:5984/_up'; do
+  echo "Waiting for CouchDB to be ready..."
+  sleep 3
 done
-echo "[entrypoint] MongoDB on this machine is ready."
+echo "[entrypoint] CouchDB is ready."
 
-# Load environment variables from .env file
-if [ -f /app/.env ]; then
-  export $(grep -v '^#' /app/.env | xargs)
+# Initialize CouchDB system databases
+echo "[entrypoint] Initializing CouchDB system databases..."
+curl -X PUT http://admin:password@127.0.0.1:5984/_users
+curl -X PUT http://admin:password@127.0.0.1:5984/_replicator
+curl -X PUT http://admin:password@127.0.0.1:5984/_global_changes
+curl -X PUT http://admin:password@127.0.0.1:5984/_dbs
+curl -X PUT http://admin:password@127.0.0.1:5984/_nodes
+
+# Create the v2grid database
+echo "[entrypoint] Creating v2grid database..."
+curl -X PUT http://admin:password@127.0.0.1:5984/v2grid
+
+# Ensure the v2grid database exists on all peers
+echo "[entrypoint] Ensuring v2grid database exists on all peers..."
+IFS=',' read -ra PEERS <<< "$AGENT_PEERS"
+for peer in "${PEERS[@]}"; do
+  echo "[entrypoint] Creating v2grid database on $peer..."
+  curl -X PUT http://admin:password@${peer}:5984/v2grid
+done
+
+# Initialize replication
+echo "[entrypoint] Setting up replication..."
+IFS=',' read -ra PEERS <<< "$AGENT_PEERS"
+for peer in "${PEERS[@]}"; do
+  echo "[entrypoint] Setting up replication to $peer..."
+  curl -X POST http://admin:password@127.0.0.1:5984/_replicator \
+       -H "Content-Type: application/json" \
+       -d "{
+             \"_id\": \"repl_${peer}\",
+             \"source\": \"http://admin:password@127.0.0.1:5984/v2grid\",
+             \"target\": \"http://admin:password@${peer}:5984/v2grid\",
+             \"continuous\": true
+           }"
+done
+
+echo "[entrypoint] Stopping CouchDB foreground process..."
+pkill -f "/opt/couchdb/bin/couchdb -n"
+
+echo "[entrypoint] Starting CouchDB instance..."
+if pgrep -x "beam.smp" > /dev/null; then
+  echo "[entrypoint] CouchDB is already running. Skipping start."
 else
-  echo "[entrypoint] No .env file found. Exiting."
+  echo "[entrypoint] Starting CouchDB..."
+  /opt/couchdb/bin/couchdb &
+fi
+# /opt/couchdb/bin/couchdb &
+
+# for host in machine2 machine3; do
+# echo "[entrypoint] Waiting for all MongoDB nodes to be ready..."
+# for host in 10.89.2.11 10.89.2.12 10.89.2.13; do
+#   until mongosh --host $host --port 27018 --eval "db.runCommand({ ping: 1 })"; do
+#     echo "Waiting for MongoDB on $host:27018 to be ready..."
+#     sleep 2
+#   done
+# done
+# echo "[entrypoint] All CouchDB nodes are ready."
+
+sleep 5
+if ! pgrep -x "beam.smp" > /dev/null; then
+  echo "[entrypoint] CouchDB failed to start. Exiting..."
   exit 1
 fi
+echo "[entrypoint] CouchDB is ready."
 
-# Check if NUM_MACHINES is set
-if [ -z "$NUM_MACHINES" ]; then
-  echo "[entrypoint] NUM_MACHINES is not set in the .env file. Exiting."
-  exit 1
-fi
 
-# Dynamically generate the list of machine IPs
-MONGO_NODES=""
-for ((i=1; i<=NUM_MACHINES; i++)); do
-  IP_ADDRESS="10.89.2.$((10 + i))"
-  MONGO_NODES+="$IP_ADDRESS,"
-done
-MONGO_NODES=${MONGO_NODES%,} # Remove trailing comma
-
-# Wait for all MongoDB nodes to be ready
-echo "[entrypoint] Waiting for all MongoDB nodes to be ready..."
-IFS=',' read -r -a NODES <<< "$MONGO_NODES"
-for host in "${NODES[@]}"; do
-  until mongosh --host "$host" --port 27018 --eval "db.runCommand({ ping: 1 })"; do
-    echo "Waiting for MongoDB on $host:27018 to be ready..."
-    sleep 2
-  done
-done
-echo "[entrypoint] All MongoDB nodes are ready."
-
-# Wait for MongoDB instances to stabilize
-echo "[entrypoint] Waiting for MongoDB instances to stabilize..."
-sleep 10
-
-# Initiate the replica set
-echo "[entrypoint] Initiating replica set..."
-mongosh --port 27018 /docker-entrypoint-initdb.d/init-replica.js || true
-echo "[entrypoint] Replica set initiation script executed."
-
-# Start the application
-./start.sh
+echo "[entrypoint] Starting the application..."
+npm run dev
 
 wait

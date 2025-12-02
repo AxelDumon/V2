@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 version: '3.8'
 
+=======
+>>>>>>> CouchDB
 services:
   global-frontend:
     build:
@@ -20,14 +23,17 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
-        - PORT=3000
-        # - AGENT_PEERS=10.89.2.12:3002,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005
+        - PORT=3001
+        - AGENT_PEERS=10.89.2.12,10.89.2.13
     container_name: machine1
     hostname: machine1
     cap_add:
       - IPC_LOCK
       - NET_RAW
+    env_file:
+      - .env
     environment:
+<<<<<<< HEAD
       - MONGO_URI=mongodb://10.89.2.11:27018/v2grid
       - REPL_MONGO_URI=mongodb://10.89.2.11:27018,10.89.2.12:27018,10.89.2.13:27018,10.89.2.14:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
       - PORT=3000
@@ -40,12 +46,28 @@ services:
       # - "3000:3000"
       # - "8000:8000"
       # - "8080:8080"
+=======
+      - URI=mongodb://10.89.2.11:5984/v2grid 
+      - PORT=3001
+      - AGENT_NAME=machine1
+      - AGENT_PEERS=machine2,machine3
+    ports:
+      - "5984:5984"
+      - "3001:3001"
+      - "8081:8081"
+      - "8001:8000"
+>>>>>>> CouchDB
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-      - machine1-data:/data/db
+      - machine1-data:/opt/couchdb/data
     networks:
+<<<<<<< HEAD
       mongo-cluster:
+=======
+      # default: {}
+      machine-cluster:
+>>>>>>> CouchDB
         ipv4_address: 10.89.2.11
         aliases:
           - machine1
@@ -54,14 +76,20 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
+<<<<<<< HEAD
         - PORT=3000
         # - AGENT_PEERS=10.89.2.11:3001,10.89.2.13:3003,10.89.2.14:3004,10.89.2.15:3005
+=======
+        - PORT=3002
+        - AGENT_PEERS=10.89.2.11,10.89.2.13
+>>>>>>> CouchDB
     container_name: machine2
     hostname: machine2
     cap_add:
       - IPC_LOCK
       - NET_RAW
     environment:
+<<<<<<< HEAD
       - MONGO_URI=mongodb://10.89.2.12:27018/v2grid
       - REPL_MONGO_URI=mongodb://10.89.2.12:27018,10.89.2.11:27018,10.89.2.13:27018,10.89.2.14:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
       - PORT=3000
@@ -74,12 +102,28 @@ services:
       # - "3000:3000"
       # - "8000:8000"
       # - "8080:8080"
+=======
+      - URI=mongodb://10.89.2.12:5984/v2grid 
+      - PORT=3002
+      - AGENT_NAME=machine2
+      - AGENT_PEERS=machine1,machine3
+    ports:
+      - "5985:5984"
+      - "3002:3002"
+      - "8082:8082"
+      - "8002:8000"
+>>>>>>> CouchDB
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-      - machine2-data:/data/db
+      - machine2-data:/opt/couchdb/data
     networks:
+<<<<<<< HEAD
       mongo-cluster:
+=======
+      # default: {}
+      machine-cluster:
+>>>>>>> CouchDB
         ipv4_address: 10.89.2.12
         aliases:
           - machine2
@@ -88,14 +132,20 @@ services:
       context: .
       dockerfile: Dockerfile.machine
       args:
+<<<<<<< HEAD
         - PORT=3000
         # - AGENT_PEERS=10.89.2.11:3001,10.89.2.12:3002,10.89.2.14:3004,10.89.2.15:3005
+=======
+        - PORT=3003
+        - AGENT_PEERS=10.89.2.11,10.89.2.12
+>>>>>>> CouchDB
     container_name: machine3
     hostname: machine3
     cap_add:
       - IPC_LOCK
       - NET_RAW
     environment:
+<<<<<<< HEAD
       - MONGO_URI=mongodb://10.89.2.13:27018/v2grid
       - REPL_MONGO_URI=mongodb://10.89.2.13:27018,10.89.2.11:27018,10.89.2.12:27018,10.89.2.14:27018,10.89.2.15:27018/v2grid?replicaSet=shard1
       - PORT=3000
@@ -108,12 +158,28 @@ services:
       # - "3000:3000"
       # - "8000:8000"
       # - "8080:8080"
+=======
+      - URI=mongodb://10.89.2.13:5984/v2grid 
+      - PORT=3003
+      - AGENT_NAME=machine3
+      - AGENT_PEERS=machine1,machine2
+    ports:
+      - "5986:5984"
+      - "3003:3003"
+      - "8083:8083"
+      - "8003:8000"
+>>>>>>> CouchDB
     volumes:
       - ./server:/app/server
       - ./init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
-      - machine3-data:/data/db
+      - machine3-data:/opt/couchdb/data
     networks:
+<<<<<<< HEAD
       mongo-cluster:
+=======
+      # default: {}
+      machine-cluster:
+>>>>>>> CouchDB
         ipv4_address: 10.89.2.13
         aliases:
           - machine3
@@ -194,7 +260,7 @@ volumes:
   machine5-data:
 
 networks:
-  mongo-cluster:
+  machine-cluster:
     driver: bridge
     ipam:
       config:

@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently --names \"app,mongo\" \"npm:start --prefix public\" \"node server/build/index.js\"",
+    "dev": "concurrently --names \"app,couchdb\" \"npm:start --prefix public\" \"node server/build/index.js\"",
     "start": "vite preview",
     "build": "tsc && vite build",
     "preview": "vite preview"
