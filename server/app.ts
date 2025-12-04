@@ -88,6 +88,8 @@ export const agent = new Agent(name, name);
 // const mongoManager = await new MongoManager().ManagerFactory();
 const couchManager = await new CouchManager().ManagerFactory();
 Agent.setBaseManager(couchManager);
+CouchManager.monitorReplication();
+CouchManager.monitorConflicts();
 
 startServer().catch(console.dir);
 

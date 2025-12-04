@@ -1,11 +1,10 @@
-import { Agent } from "../Agent.js";
 import { CouchManager } from "../BaseManager/CouchManager.js";
-import { Cell } from "../Cell.js";
-import { Document } from "../utils/couchTypes";
+import { AgentDocument, CellDocument } from "../utils/couchTypes";
 import { BaseRepository } from "./interfaces/BaseRepository.js";
 
-export abstract class BasicCouchRepository<T extends (Cell | Agent) & Document>
-  implements BaseRepository<T>
+export abstract class BasicCouchRepository<
+  T extends CellDocument | AgentDocument
+> implements BaseRepository<T>
 {
   protected baseManager: CouchManager;
   static designDocId: string;
@@ -43,13 +42,16 @@ export abstract class BasicCouchRepository<T extends (Cell | Agent) & Document>
   abstract count(): Promise<number>;
   abstract findAll(): Promise<T[]>;
   async create(item: T): Promise<T> {
+    let body;
+    if (item.type === "cell") body = item as CellDocument;
+    else body = item as AgentDocument;
     const createdDoc = await fetch(`${CouchManager.dbUrl}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: CouchManager.authHeader,
       },
-      body: JSON.stringify(item),
+      body: JSON.stringify(body),
     });
     const data = (await createdDoc.json()) as {
       id: string;

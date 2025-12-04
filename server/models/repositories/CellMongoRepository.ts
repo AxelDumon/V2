@@ -48,6 +48,7 @@ export class CellMongoRepository
 
   async getRandomUndiscoveredCell(): Promise<Cell | null> {
     try {
+      // Get all discovered cells (valeur > 0)
       const foundCells: CellDocument[] = (await this.collectionGetter()
         .aggregate([{ $match: { valeur: { $gt: 0 } } }])
         .toArray()) as CellDocument[];

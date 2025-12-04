@@ -8,10 +8,13 @@
             "map": "function (doc) { if (doc.type === 'cell' && doc.valeur === 0) { emit(null, doc); } }"
         },
         "by_cells": {
-            "map": "function (doc) { if (doc.type === 'cell' ) { emit([doc.x, doc.y], doc); } }"
+            "map": "function (doc) { if (doc.type === 'cell' ) { emit(doc._id, doc); } }"
+        },
+        "by_discovered_cells": {
+            "map": "function (doc) { if (doc.type === 'cell' && doc.valeur > 0) { emit(null, doc); } }"
         },
         "undiscovered_neighbors": {
-            "map": "function (doc) { if (doc.type === 'cell' && doc.valeur === 0) { emit([doc.x, doc.y], doc); } }"
+            "map": "function (doc) { if (doc.type === 'cell' && doc.valeur === 0) { emit(doc._id, doc); } }"
         }
     }
 }

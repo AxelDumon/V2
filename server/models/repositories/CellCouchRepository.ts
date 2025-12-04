@@ -11,6 +11,11 @@ export class CellCouchRepository
   extends BasicCouchRepository<CellDocument>
   implements CellRepository
 {
+  static designDocId: string = "cell_views";
+  static SIZE: number = process.env.SIZE ? parseInt(process.env.SIZE) : 40;
+  static BOOL_GRID: boolean[] = Array(
+    CellCouchRepository.SIZE * CellCouchRepository.SIZE
+  ).fill(false);
   update(
     id: string,
     item: Partial<CellDocument>
@@ -19,8 +24,6 @@ export class CellCouchRepository
     item;
     throw new Error("Method not implemented.");
   }
-  static designDocId: string = "cell_views";
-  static SIZE: number = process.env.SIZE ? parseInt(process.env.SIZE) : 40;
 
   static async findOne(x: number, y: number): Promise<CellDocument | null> {
     try {
@@ -28,17 +31,20 @@ export class CellCouchRepository
         CellCouchRepository.designDocId,
         "by_cells",
         { include_docs: "true" },
-        [[x, y]]
+        [`${x}-${y}`]
       );
 
       if (response.total_rows === 0) {
-        console.log(
-          `[${CellCouchRepository.findOne.name}] No cell found at coordinates (${x}, ${y}).`
-        );
         return null;
       }
 
-      return response.rows[0].doc as CellDocument;
+      if (response.rows.length === 0 || !response.rows[0].value) {
+        return null;
+      }
+
+      // console.log(response.rows[0].value);
+
+      return response.rows[0].value as CellDocument;
     } catch (error) {
       console.error(
         `[${CellCouchRepository.findOne.name}] Error finding cell:`,
@@ -115,34 +121,67 @@ export class CellCouchRepository
 
   async getRandomUndiscoveredCell(): Promise<Cell | null> {
     try {
-      const undiscoveredCells = await CouchManager.findView(
-        CellCouchRepository.designDocId,
-        "by_undiscovered_cells",
-        { include_docs: "true" }
+      // Get all discovered cells (valeur > 0)
+      const foundCells: CellDocument[] = (
+        await CouchManager.findView(
+          CellCouchRepository.designDocId,
+          "by_discovered_cells",
+          { include_docs: "true" }
+        )
+      ).rows.map((row) => row.doc as CellDocument);
+      console.log(
+        `[${this.getRandomUndiscoveredCell.name}] Found ${foundCells.length} discovered cells.`
       );
 
-      if (undiscoveredCells.total_rows === 0) {
+      // If all cells are discovered, return null
+      if (
+        foundCells.length >=
+        CellCouchRepository.SIZE * CellCouchRepository.SIZE
+      ) {
         console.log(
-          `[${this.getRandomUndiscoveredCell.name}] No undiscovered cells found.`
+          `[${this.getRandomUndiscoveredCell.name}] All cells are discovered. Returning null.`
         );
         return null;
       }
 
-      const randomIndex = Math.floor(
-        Math.random() * undiscoveredCells.total_rows
-      );
-      const cellData: CellDocument = undiscoveredCells.rows[randomIndex]
-        .doc as CellDocument;
+      const boolGrid = CellCouchRepository.BOOL_GRID.slice();
+      // Update BOOL_GRID based on found cells
+      foundCells.forEach((cell) => {
+        boolGrid[cell.x * CellCouchRepository.SIZE + cell.y] = true;
+      });
 
-      return cellData;
+      const unexploredCells: { x: number; y: number }[] = [];
+      boolGrid.forEach((cell, index) => {
+        if (!cell) {
+          const x = Math.floor(index / CellCouchRepository.SIZE);
+          const y = index % CellCouchRepository.SIZE;
+          unexploredCells.push({ x, y });
+        }
+      });
+
+      const chosenCell =
+        unexploredCells[Math.floor(Math.random() * unexploredCells.length)];
+
+      console.log(
+        `[${this.getRandomUndiscoveredCell.name}] Chosen cell: x:${chosenCell.x}, y:${chosenCell.y}`
+      );
+
+      return new Cell(
+        chosenCell.x,
+        chosenCell.y,
+        0,
+        [],
+        `${chosenCell.x}-${chosenCell.y}`
+      );
     } catch (error) {
       console.error(
         `[${this.getRandomUndiscoveredCell.name}] Error fetching undiscovered cell:`,
         error
       );
-      return null;
+      throw error;
     }
   }
+
   async getUndiscoveredNeighbors(x: number, y: number): Promise<Cell[]> {
     try {
       const startkey = [Math.max(0, x - 1), Math.max(0, y - 1)];
@@ -150,28 +189,63 @@ export class CellCouchRepository
         Math.min(CellCouchRepository.SIZE - 1, x + 1),
         Math.min(CellCouchRepository.SIZE - 1, y + 1),
       ];
-      const neighbors = await CouchManager.findView(
-        CellCouchRepository.designDocId,
-        "undiscovered_neighbors",
-        {
-          startkey: JSON.stringify(startkey),
-          endkey: JSON.stringify(endkey),
+
+      const undiscoveredCells = [];
+
+      for (let i = startkey[0]; i <= endkey[0]; i++) {
+        for (let j = startkey[1]; j <= endkey[1]; j++) {
+          if (i === x && j === y) {
+            continue; // Skip the center cell
+          }
+          const cell = await CellCouchRepository.findOne(i, j);
+          if (cell && cell.valeur > 0) continue; // Skip discovered cells{
+          if (cell) {
+            undiscoveredCells.push(cell);
+          } else {
+            undiscoveredCells.push({
+              x: i,
+              y: j,
+              valeur: 0,
+              agents: [],
+              _id: `${i}-${j}`,
+              type: "cell",
+            });
+          }
         }
-      );
+      }
 
-      const filteredNeighbors = neighbors.rows
-        .map((row) => row.value)
-        .filter((cell) => {
-          const dx = Math.abs(cell.x - x);
-          const dy = Math.abs(cell.y - y);
-          return (
-            (dx === 1 && dy === 0) ||
-            (dx === 0 && dy === 1) ||
-            (dx === 1 && dy === 1)
-          );
-        });
+      // const resp = await CouchManager.findView(
+      //   CellCouchRepository.designDocId,
+      //   "by_cells",
+      //   {
+      //     include_docs: "true",
+      //     startkey: JSON.stringify(startkey),
+      //     endkey: JSON.stringify(endkey),
+      //   }
+      // );
 
-      return filteredNeighbors;
+      // const neighbors = await CouchManager.findView(
+      //   CellCouchRepository.designDocId,
+      //   "undiscovered_neighbors",
+      //   {
+      //     startkey: JSON.stringify(startkey),
+      //     endkey: JSON.stringify(endkey),
+      //   }
+      // );
+
+      // const filteredNeighbors = neighbors.rows
+      //   .map((row) => row.value)
+      //   .filter((cell) => {
+      //     const dx = Math.abs(cell.x - x);
+      //     const dy = Math.abs(cell.y - y);
+      //     return (
+      //       (dx === 1 && dy === 0) ||
+      //       (dx === 0 && dy === 1) ||
+      //       (dx === 1 && dy === 1)
+      //     );
+      //   });
+
+      return undiscoveredCells as Cell[];
     } catch (error) {
       console.error(
         `[${this.getUndiscoveredNeighbors.name}] Error fetching undiscovered neighbors:`,
