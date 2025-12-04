@@ -1,13 +1,19 @@
 import { configDotenv } from "dotenv";
-import { AgentRepository } from "../repositories/interfaces/AgentRepository";
-import { CellRepository } from "../repositories/interfaces/CellRepository";
+import { AgentRepository } from "../repositories/interfaces/AgentRepository.js";
+import { CellRepository } from "../repositories/interfaces/CellRepository.js";
 import { SimulationProps } from "../utils/types";
-import { BaseManager } from "./interfaces/BaseManager";
-import { broadcastUpdate } from "../utils/WebSocket";
-import { AgentDocument, AllDocs, DesignDoc } from "../utils/couchTypes";
-import { Agent } from "../Agent";
-import designDocs from "../views";
-import { AgentCouchRepository } from "../repositories/AgentCouchRepository";
+import { BaseManager } from "./interfaces/BaseManager.js";
+import { broadcastUpdate } from "../utils/WebSocket.js";
+import {
+  AgentDocument,
+  AllDocs,
+  CellDocument,
+  DesignDoc,
+  Document,
+} from "../utils/couchTypes";
+import designDocs from "../views/index.js";
+import { AgentCouchRepository } from "../repositories/AgentCouchRepository.js";
+import { CellCouchRepository } from "../repositories/CellCouchRepository.js";
 
 configDotenv();
 
@@ -32,22 +38,52 @@ export class CouchManager extends BaseManager {
   async initBase(): Promise<number> {
     try {
       await CouchManager.createDB();
+      await this.cellRepository.deleteAll();
       for (const [name, designDoc] of Object.entries(designDocs)) {
         console.log(`Uploading design document: ${name}`);
         await CouchManager.uploadDesignDoc(designDoc);
       }
       console.log("CouchDB initialized successfully.");
 
-      const cellNumber = await this.cellRepository.count();
-      await this.cellRepository.deleteAll();
-      console.log(`Cell count before initialization: ${cellNumber}`);
-
       return 0;
-      // if (cellNumber === 0) await this.cellRepository.initGrid();
-      // else console.log(`Grille déjà initialisée (${cellNumber} cases)`);
     } catch (error) {
       console.error("Error initializing CouchDB:", error);
       return -1;
+    }
+  }
+
+  static async callUpdateHandler(
+    designName: string,
+    updateName: string,
+    docId: string,
+    params: Record<string, string> = {},
+    body: any | null = null
+  ) {
+    // returns [doc, response : str]
+    try {
+      const query = new URLSearchParams(params).toString();
+      const url = `${CouchManager.dbUrl}/_design/${designName}/_update/${updateName}/${docId}?${query}`;
+
+      const options: RequestInit = {
+        method: "PUT",
+        headers: {
+          Authorization: CouchManager.authHeader,
+          "Content-Type": "application/json",
+        },
+      };
+
+      if (body) options.body = JSON.stringify(body);
+      const response = await fetch(url, options);
+
+      if (!response.ok)
+        throw new Error(
+          `Failed to call update handler: ${response.statusText}`
+        );
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error calling update handler:", error);
+      return null;
     }
   }
 
@@ -97,15 +133,74 @@ export class CouchManager extends BaseManager {
     return this.agentRepository;
   }
 
-  static async createDB(): Promise<void> {}
+  static async createDB(): Promise<void> {
+    const url = CouchManager.dbUrl;
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { Authorization: CouchManager.authHeader },
+      });
 
-  async ManagerFactory(): Promise<BaseManager> {
+      if (response.status === 201) {
+        console.log(`Database created: ${CouchManager.dbName}`);
+      } else if (response.status === 412) {
+        console.log(`Database already exists: ${CouchManager.dbName}`);
+        console.log("Clearing documents for fresh start...");
+        const allDocsResponse = await fetch(`${CouchManager.dbUrl}/_all_docs`, {
+          headers: { Authorization: CouchManager.authHeader },
+        });
+        const allDocsData = await allDocsResponse.json();
+        const docsToDelete = allDocsData.rows.map((row: any) => ({
+          _id: row.id,
+          _rev: row.value.rev,
+          _deleted: true,
+        }));
+
+        if (docsToDelete.length > 0) {
+          const bulkDeleteResponse = await fetch(
+            `${CouchManager.dbUrl}/_bulk_docs`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: CouchManager.authHeader,
+              },
+              body: JSON.stringify({ docs: docsToDelete }),
+            }
+          );
+
+          if (bulkDeleteResponse.ok) {
+            console.log(
+              `All documents deleted from database: ${CouchManager.dbName}`
+            );
+          } else {
+            console.error(
+              `Failed to delete documents: ${bulkDeleteResponse.statusText}`
+            );
+          }
+        } else {
+          console.log("No documents to delete.");
+        }
+      } else {
+        throw new Error(`Failed to create database: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(`Error creating database:`, error);
+    }
+  }
+
+  async ManagerFactory(): Promise<CouchManager> {
     console.log("CouchManager Factory");
     const couchManager = new CouchManager();
-    couchManager.cellRepository = new CellCouchRepository();
-    couchManager.agentRepository = new AgentCouchRepository();
+    couchManager.cellRepository = new CellCouchRepository(couchManager);
+    couchManager.agentRepository = new AgentCouchRepository(couchManager);
     await couchManager.initBase();
     return couchManager;
+  }
+
+  async closeAll(): Promise<void> {
+    console.log("CouchManager closeAll called - nothing to close.");
+    return await Promise.resolve();
   }
 
   static async monitorReplication() {
@@ -234,6 +329,31 @@ export class CouchManager extends BaseManager {
     }
   }
 
+  static async updateDocument(doc: Document): Promise<Document | null> {
+    const url = `${CouchManager.dbUrl}/${doc._id}`;
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: CouchManager.authHeader,
+        },
+        body: JSON.stringify(doc),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update document: ${response.statusText}`);
+      }
+
+      // console.log(`Document updated: ${doc._id}`);
+      const data = await response.json();
+      return { ...doc, _rev: data.rev };
+    } catch (error) {
+      console.error("Error updating document:", error);
+      return null;
+    }
+  }
+
   static async resolveConflict(
     docId: string,
     current: CellDocument,
@@ -282,6 +402,34 @@ export class CouchManager extends BaseManager {
         error
       );
     }
+  }
+
+  static async bulkDocs(
+    bulkDelete: { _id: string; _rev: string | undefined; _deleted: boolean }[]
+  ) {
+    return fetch(`${CouchManager.dbUrl}/_bulk_docs`, {
+      method: "POST",
+      headers: {
+        Authorization: CouchManager.authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ docs: bulkDelete }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Failed to bulk delete documents: ${response.statusText}`
+          );
+        }
+        return response.json();
+      })
+      .then((data) => {
+        return data;
+      })
+      .catch((error) => {
+        console.error("Error during bulk delete:", error);
+        throw error;
+      });
   }
 
   static async getAgentStatsView(): Promise<any> {
@@ -339,5 +487,46 @@ export class CouchManager extends BaseManager {
 
   getSimulationStats(): Promise<SimulationProps> {
     throw new Error("Method not implemented.");
+  }
+
+  static async findView(
+    designName: string,
+    viewName: string,
+    params: Record<string, string> = {},
+    keys?: any[]
+  ): Promise<{ total_rows: number; rows: any[] }> {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const url = `${CouchManager.dbUrl}/_design/${designName}/_view/${viewName}?${query}`;
+
+      const options: RequestInit = {
+        method: "GET",
+        headers: {
+          Authorization: CouchManager.authHeader,
+        } as Record<string, string>,
+      };
+
+      if (keys) {
+        options.method = "POST";
+        options.body = JSON.stringify({ keys });
+        (options.headers as Record<string, string>)["Content-Type"] =
+          "application/json";
+      }
+
+      const response = await fetch(url, options);
+
+      if (!response.ok) {
+        throw new Error(`Failed to query view: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return {
+        total_rows: data.total_rows || 0,
+        rows: data.rows || [],
+      };
+    } catch (error) {
+      console.error(`[CouchDB.findView] Error querying view:`, error);
+      return { total_rows: 0, rows: [] }; // Return a consistent structure
+    }
   }
 }

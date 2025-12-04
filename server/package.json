@@ -1,20 +1,12 @@
 {
   "name": "v2-server",
   "version": "1.0.0",
-<<<<<<< HEAD
   "main": "app.js",
-=======
-  "main": "build/server/app.js",
->>>>>>> CouchDB
   "type": "module",
   "resolveJsonModule": true,
   "esModuleInterop": true,
   "scripts": {
-<<<<<<< HEAD
     "start": "node build/app.js",
-=======
-    "start": "npx ts-node app.ts",
->>>>>>> CouchDB
     "build": "tsc"
   },
   "dependencies": {
@@ -22,10 +14,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^4.21.2",
-<<<<<<< HEAD
     "mongodb": "^6.19.0",
-=======
->>>>>>> CouchDB
     "uuid": "^11.1.0",
     "ws": "^8.18.3"
   },
@@ -33,10 +22,6 @@
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.3",
-<<<<<<< HEAD
-=======
-    "@types/node": "^24.5.2",
->>>>>>> CouchDB
     "@types/ws": "^8.18.1",
     "typescript": "5.4"
   }

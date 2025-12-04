@@ -1,6 +1,7 @@
 // https://docs.couchdb.org/en/stable/json-structure.html#couchdb-document
 
-import { Cell } from "../Cell";
+import { Agent } from "../Agent.js";
+import { Cell } from "../Cell.js";
 
 export type DesignDoc = {
   _id: string; // The ID of the design document (e.g., "_design/example")
@@ -54,15 +55,17 @@ export type CellDocument = Document &
 //   endTime?: string; // ISO date string
 // };
 
-export type AgentDocument = Document & {
-  type: "agent";
-  tilesExplored: number;
-  offlineTime?: number; // Seconds
-  name: string;
-  duration?: number; // Seconds
-  startTime?: Date;
-  endTime?: Date;
-};
+export type AgentDocument = Document &
+  Agent & {
+    type: "agent";
+    tilesExplored?: number;
+    offlineTime?: number; // Seconds
+    // name: string;
+    duration?: number; // Seconds
+    // startTime?: Date;
+    // endTime?: Date;
+    // isExploring?: boolean;
+  };
 
 export function isAgentDocument(obj: any): obj is AgentDocument {
   return (

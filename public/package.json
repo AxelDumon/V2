@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently --names \"app,couchdb\" \"npm:start --prefix public\" \"node server/build/index.js\"",
-    "start": "vite preview",
+    "start": "vite preview --port 5016",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

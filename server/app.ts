@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
-import { MongoManager } from "./models/BaseManager/MongoManager.js";
 import cellsRouter from "./routes/cells.js";
 import exploreRouter from "./routes/explore.js";
 import initRouter from "./routes/init.js";
@@ -11,6 +10,7 @@ import statusRouter from "./routes/status.js";
 import cors from "cors";
 import { Agent } from "./models/Agent.js";
 import { WebSocketServer } from "ws";
+import { CouchManager } from "./models/BaseManager/CouchManager.js";
 
 const wsport = Number(process.env.BASE_WS_PORT) || 4860;
 
@@ -85,15 +85,16 @@ export const agent = new Agent(name, name);
 // };
 
 // LINE TO CHANGE IF YOU CHANGE DB
-const mongoManager = await new MongoManager().ManagerFactory();
-Agent.setBaseManager(mongoManager);
+// const mongoManager = await new MongoManager().ManagerFactory();
+const couchManager = await new CouchManager().ManagerFactory();
+Agent.setBaseManager(couchManager);
 
 startServer().catch(console.dir);
 
 const shutdown = async (code = 0) => {
   console.log("Shutting down server...");
   try {
-    await mongoManager.closeAll();
+    await couchManager.closeAll();
   } catch (err) {
     console.error("Error during shutdown:", err);
   }
