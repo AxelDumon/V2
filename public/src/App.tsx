@@ -33,7 +33,9 @@ export default function App() {
 		setTab(prevTab => {
 			const newTab = prevTab.map(row => row.slice());
 			cells.forEach((cell: any) => {
-				newTab[cell.x][cell.y] = {
+				const x = 'x' in cell ? cell.x : cell._id?.split('-')[0];
+				const y = cell.y || cell._id.split('-')[1];
+				newTab[x][y] = {
 					valeur: cell.valeur || 0,
 					agents: cell.agents || [],
 				};
@@ -90,20 +92,22 @@ export default function App() {
 
 		ws.onmessage = event => {
 			const message: any = JSON.parse(event.data);
-			console.log('WebSocket message received:', message);
 
 			if (message.type === 'db_change') {
 				console.log('Database change detected:', message);
 
-				if (message && message.agents != undefined)
+				if (message && message.agents != undefined) {
+					const x = 'x' in message ? message.x : message._id?.split('-')[0];
+					const y = message.y || message._id?.split('-')[1];
 					setTab(prevTab => {
 						const newTab = prevTab.map(row => row.slice());
-						newTab[message.x][message.y] = {
+						newTab[x][y] = {
 							valeur: message.valeur || 0,
 							agents: message.agents || [],
 						};
 						return newTab;
 					});
+				}
 			}
 			if (message.type === 'agent') fetchAgentStats();
 			// if (message.type == 'cell_update') {

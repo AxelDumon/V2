@@ -119,3 +119,13 @@ process.on("uncaughtException", (err) => {
 // import { MongoRsetFailover } from "./tests/MongoRsetFailover.js";
 // MongoRsetFailover.testCollectionChange().catch(console.dir);
 // MongoRsetFailover.testConnectionWhenOfflineOnLocal().catch(console.dir);
+
+import { TestSimulationManager } from "./models/utils/TestSimulationManager.js";
+TestSimulationManager.addExperience({
+  gridSideSize: 40,
+  totalGridSize: 1600,
+  agentsStats: [],
+  explorationTime: 0,
+  offlineTime: 0,
+  dbName: "test",
+}).catch(console.dir);

@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { SimulationProps } from "./types";
+import { SimulationProps } from "./couchTypes";
 import { configDotenv } from "dotenv";
 
 configDotenv({ debug: true });

@@ -122,13 +122,17 @@ export class CellCouchRepository
   async getRandomUndiscoveredCell(): Promise<Cell | null> {
     try {
       // Get all discovered cells (valeur > 0)
-      const foundCells: CellDocument[] = (
+      const foundCells: { x: number; y: number }[] = (
         await CouchManager.findView(
           CellCouchRepository.designDocId,
-          "by_discovered_cells",
-          { include_docs: "true" }
+          "by_discovered_cells"
         )
-      ).rows.map((row) => row.doc as CellDocument);
+      ).rows
+        .map((row) => row.id.split("-"))
+        .map(([x, y]) => ({
+          x: parseInt(x),
+          y: parseInt(y),
+        }));
       console.log(
         `[${this.getRandomUndiscoveredCell.name}] Found ${foundCells.length} discovered cells.`
       );
@@ -150,29 +154,16 @@ export class CellCouchRepository
         boolGrid[cell.x * CellCouchRepository.SIZE + cell.y] = true;
       });
 
-      const unexploredCells: { x: number; y: number }[] = [];
-      boolGrid.forEach((cell, index) => {
-        if (!cell) {
-          const x = Math.floor(index / CellCouchRepository.SIZE);
-          const y = index % CellCouchRepository.SIZE;
-          unexploredCells.push({ x, y });
-        }
-      });
-
-      const chosenCell =
-        unexploredCells[Math.floor(Math.random() * unexploredCells.length)];
-
+      // const unexploredCells: { x: number; y: number }[] = [];
+      const chosenIndex = boolGrid.indexOf(false);
+      const x = Math.floor(chosenIndex / CellCouchRepository.SIZE);
+      const y = chosenIndex % CellCouchRepository.SIZE;
+      const chosenCell = new Cell(x, y, 0, [], `${x}-${y}`);
       console.log(
         `[${this.getRandomUndiscoveredCell.name}] Chosen cell: x:${chosenCell.x}, y:${chosenCell.y}`
       );
 
-      return new Cell(
-        chosenCell.x,
-        chosenCell.y,
-        0,
-        [],
-        `${chosenCell.x}-${chosenCell.y}`
-      );
+      return chosenCell;
     } catch (error) {
       console.error(
         `[${this.getRandomUndiscoveredCell.name}] Error fetching undiscovered cell:`,
@@ -254,7 +245,13 @@ export class CellCouchRepository
       return [];
     }
   }
-  initGrid(): Promise<number> {
-    throw new Error("Method not implemented.");
+  async initGrid(): Promise<number> {
+    this.deleteAll().catch((error) => {
+      console.error(
+        `[${this.initGrid.name}] Error deleting existing cells:`,
+        error
+      );
+    });
+    return 0;
   }
 }

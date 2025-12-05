@@ -1,6 +1,6 @@
 import { AgentRepository } from "../../repositories/interfaces/AgentRepository.js";
 import { CellRepository } from "../../repositories/interfaces/CellRepository.js";
-import { SimulationProps } from "../../utils/types.js";
+import { SimulationProps } from "../../utils/couchTypes.js";
 
 export abstract class BaseManager {
   abstract cellRepository: CellRepository;

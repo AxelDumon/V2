@@ -1,7 +1,7 @@
 import { configDotenv } from "dotenv";
 import { AgentRepository } from "../repositories/interfaces/AgentRepository.js";
 import { CellRepository } from "../repositories/interfaces/CellRepository.js";
-import { SimulationProps } from "../utils/types";
+import { AgentStats, SimulationProps } from "../utils/couchTypes.js";
 import { BaseManager } from "./interfaces/BaseManager.js";
 import { broadcastUpdate } from "../utils/WebSocket.js";
 import {
@@ -239,7 +239,7 @@ export class CouchManager extends BaseManager {
               // console.log('[CouchDB] Change detected:', change);
 
               // Broadcast the change to WebSocket clients
-              broadcastUpdate({ type: "db_change", data: change });
+              broadcastUpdate(change.doc);
             } catch (parseError) {
               console.error("[CouchDB] Error parsing line:", line, parseError);
             }
@@ -261,6 +261,7 @@ export class CouchManager extends BaseManager {
 
       while (true) {
         // Fetch changes using longpoll
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // Retry after delay
         const response = await fetch(changesUrl, {
           headers: { Authorization: CouchManager.authHeader },
         });
@@ -269,7 +270,6 @@ export class CouchManager extends BaseManager {
           console.error(
             `[CouchDB] Failed to fetch changes: ${response.statusText}`
           );
-          await new Promise((resolve) => setTimeout(resolve, 5000)); // Retry after delay
           continue;
         }
 
@@ -452,7 +452,7 @@ export class CouchManager extends BaseManager {
     }
   }
 
-  async getAgentStats(): Promise<any> {
+  async getAgentStats(): Promise<AgentStats[]> {
     try {
       const stats = await CouchManager.getAgentStatsView();
       const agents: AllDocs = await fetch(
@@ -485,8 +485,33 @@ export class CouchManager extends BaseManager {
     }
   }
 
-  getSimulationStats(): Promise<SimulationProps> {
-    throw new Error("Method not implemented.");
+  async getSimulationStats(): Promise<SimulationProps> {
+    try {
+      const gridSideSize = CellCouchRepository.SIZE;
+      const totalGridSize = gridSideSize * gridSideSize;
+
+      const agentsStats = await this.getAgentStats();
+
+      const explorationTime = agentsStats.reduce((max, agent) => {
+        if (agent.duration && agent.duration > max) {
+          return agent.duration;
+        }
+        return max;
+      }, 0);
+      const offlineTime = Number(process.env.OFFLINE_TIME) || 0;
+
+      return {
+        gridSideSize,
+        totalGridSize,
+        agentsStats,
+        explorationTime,
+        offlineTime,
+        dbName: CouchManager.dbName,
+      };
+    } catch (error) {
+      console.error("Failed to get simulation stats:", error);
+      throw error;
+    }
   }
 
   static async findView(

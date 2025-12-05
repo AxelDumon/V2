@@ -1,7 +1,0 @@
-{
-    "_id": "_design/cell_updates",
-    "updates": {
-      "reserve_cell": "function(doc, req) { var body = JSON.parse(req.body); if (!doc) { doc = { _id: req.id, valeur: 1, agents: [body.agent] }; return [doc, JSON.stringify({ message: 'Cell created and reserved', doc: doc })]; } if (doc.valeur === 0) { doc.valeur += 1; doc.agents.push(body.agent); return [doc, JSON.stringify({ message: 'Cell reserved', doc: doc })]; } else { return [null, JSON.stringify({ message: 'Cell already reserved'  })]; } }",
-      "reserve_cell_atomic_full": "function(doc, req) {var body = JSON.parse(req.body);if (!doc) {doc = { _id: req.id, valeur: 0, agents: [] };}doc.valeur = doc.valeur || 0;doc.agents = doc.agents || [];if (body.agent && doc.agents.indexOf(body.agent) === -1) {doc.agents.push(body.agent);}if (doc.valeur === 0) {doc.valeur = 1;return [doc, JSON.stringify({ message: 'Cell reserved', doc: doc })];} else {return [doc, JSON.stringify({ message: 'Cell already reserved', doc: doc })];}}"
-    }
-  }
