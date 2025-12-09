@@ -254,4 +254,7 @@ export class CellCouchRepository
     });
     return 0;
   }
+  async deleteAll(): Promise<void> {
+    return super.deleteAll();
+  }
 }

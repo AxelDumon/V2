@@ -1,7 +1,11 @@
 import { configDotenv } from "dotenv";
 import { AgentRepository } from "../repositories/interfaces/AgentRepository.js";
 import { CellRepository } from "../repositories/interfaces/CellRepository.js";
-import { AgentStats, SimulationProps } from "../utils/couchTypes.js";
+import {
+  AgentStats,
+  SimulationProps,
+  ViewResult,
+} from "../utils/couchTypes.js";
 import { BaseManager } from "./interfaces/BaseManager.js";
 import { broadcastUpdate } from "../utils/WebSocket.js";
 import {
@@ -233,7 +237,7 @@ export class CouchManager extends BaseManager {
         // Process all complete lines
         for (let i = 0; i < lines.length - 1; i++) {
           const line = lines[i].trim();
-          if (line) {
+          if (line && line.length > 0) {
             try {
               const change = JSON.parse(line);
               // console.log('[CouchDB] Change detected:', change);
@@ -432,7 +436,7 @@ export class CouchManager extends BaseManager {
       });
   }
 
-  static async getAgentStatsView(): Promise<any> {
+  static async getAgentStatsView(): Promise<{ name: string; count: number }[]> {
     try {
       const res = await fetch(
         CouchManager.dbUrl +
@@ -441,7 +445,8 @@ export class CouchManager extends BaseManager {
           headers: { Authorization: CouchManager.authHeader },
         }
       );
-      const data: AllDocs = await res.json();
+      const data: ViewResult<any> = await res.json();
+      // const data: AllDocs = await res.json();
       return data.rows.map((row) => ({
         name: row.key,
         count: row.value,
@@ -454,30 +459,44 @@ export class CouchManager extends BaseManager {
 
   async getAgentStats(): Promise<AgentStats[]> {
     try {
-      const stats = await CouchManager.getAgentStatsView();
+      const stats: { name: string; count: number }[] =
+        await CouchManager.getAgentStatsView();
       const agents: AllDocs = await fetch(
-        `${CouchManager.dbUrl}/_all_docs?include_docs=true`,
+        `${CouchManager.dbUrl}/_design/agent_views/_view/by_name`,
         {
           headers: { Authorization: CouchManager.authHeader },
         }
       ).then((res) => res.json());
 
+      // const agents: AllDocs = await fetch(
+      //   `${CouchManager.dbUrl}/_all_docs?include_docs=true`,
+      //   {
+      //     headers: { Authorization: CouchManager.authHeader },
+      //   }
+      // ).then((res) => res.json());
+
       const agentsData: AgentDocument[] = agents.rows
-        .map((row) => row.doc)
+        .map((row) => row.value)
         .filter(
           (doc): doc is AgentDocument => doc !== undefined && "name" in doc
         );
 
-      return stats.map((stat: any) => {
+      return stats.map((stat) => {
         const agent = agentsData.find((a) => a.name === stat.name);
-        let duration = null;
+        let duration = undefined;
         if (agent?.startTime && agent?.endTime) {
           duration =
             (new Date(agent.endTime).getTime() -
               new Date(agent.startTime).getTime()) /
             1000;
         }
-        return { ...stat, duration };
+        return {
+          tilesExplored: stat.count,
+          name: stat.name,
+          duration,
+          startTime: agent?.startTime,
+          endTime: agent?.endTime,
+        };
       });
     } catch (error) {
       console.error("Error fetching agent stats with duration:", error);

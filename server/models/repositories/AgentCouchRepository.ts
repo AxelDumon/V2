@@ -52,6 +52,7 @@ export class AgentCouchRepository
           name: item.name || id,
           startTime: item.startTime || undefined,
           endTime: item.endTime || undefined,
+          isExploring: item.isExploring || false,
         } as AgentDocument;
         const createdDoc = await this.create(newDoc);
         return createdDoc;
@@ -59,6 +60,7 @@ export class AgentCouchRepository
       const updatedDoc: AgentDocument = {
         ...existingDoc,
         ...item,
+        isExploring: item.isExploring || false,
       } as AgentDocument;
       const result = await CouchManager.updateDocument(updatedDoc);
       return result as AgentDocument;

@@ -13,31 +13,61 @@ export abstract class BasicCouchRepository<
     this.baseManager = baseManager;
   }
   async deleteAll(): Promise<void> {
-    const docs = await fetch(
-      `${CouchManager.dbUrl}/_all_docs?include_docs=true`
-    );
+    const docs = await fetch(`${CouchManager.dbUrl}/_all_docs`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: CouchManager.authHeader,
+      },
+    });
     const data = await docs.json();
-    if (data == undefined || data.rows === undefined) {
+    console.log(data);
+    if (!data || !Array.isArray(data.rows) || data.rows.length === 0) {
       console.log(`[${this.deleteAll.name}] No documents found to delete.`);
       return;
     }
-    const deleteDocs = data.rows.map((row: any) => {
-      return {
+    const deleteDocs = data.rows
+      .filter(
+        (row: any) =>
+          row &&
+          typeof row.id === "string" &&
+          row.id.charAt(0) !== "_" &&
+          row.value &&
+          row.value.rev
+      )
+      .map((row: { id: string; value: { rev: string } & any }) => ({
         _id: row.id,
         _rev: row.value.rev,
         _deleted: true,
-      };
-    });
+      }));
 
-    if (deleteDocs.length > 0) {
-      await fetch(`${CouchManager.dbUrl}/_bulk_docs`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ docs: deleteDocs }),
-      });
+    if (deleteDocs.length === 0) {
+      console.log(
+        `[${this.deleteAll.name}] Nothing to delete (no deletable docs or missing revs).`
+      );
+      return;
     }
+
+    const resp = await fetch(`${CouchManager.dbUrl}/_bulk_docs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: CouchManager.authHeader,
+      },
+      body: JSON.stringify({ docs: deleteDocs }),
+    });
+    const result = await resp.json();
+    console.log(`[${this.deleteAll.name}] _bulk_docs response:`, result);
+
+    if (
+      !resp.ok ||
+      (Array.isArray(result) && result.some((res) => res && res.error))
+    ) {
+      console.error(`[${this.deleteAll.name}] Some deletions failed`, result);
+      throw new Error("deleteAll failed: see logs for details");
+    }
+
+    console.log(`[${this.deleteAll.name}] All documents deleted successfully.`);
   }
   abstract count(): Promise<number>;
   abstract findAll(): Promise<T[]>;

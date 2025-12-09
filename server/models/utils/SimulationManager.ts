@@ -40,7 +40,6 @@ export class SimulationManager {
       const data = await fs.promises.readFile(filePath, "utf8");
       const simulations: SimulationProps[] =
         data.length <= 1 ? [] : JSON.parse(data);
-      console.log(simulations);
       const simulationsManager: SimulationManagerProps = {
         simulations: simulations,
       };

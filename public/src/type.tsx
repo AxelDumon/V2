@@ -14,7 +14,7 @@ export type CellDTO = {
 export type AgentStat = {
 	_id: string;
 	name: string;
-	count: number;
+	tilesExplored: number;
 	duration: number | null;
 };
 

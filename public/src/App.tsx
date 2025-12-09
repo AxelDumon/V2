@@ -193,7 +193,7 @@ export default function App() {
 				<ul>
 					{agentStats.map(agent => (
 						<li className="text-white border" key={agent.name || agent._id}>
-							Agent {agent.name || agent._id} : {agent.count} cases
+							Agent {agent.name || agent._id} : {agent.tilesExplored ? `${agent.tilesExplored} cases` : '0 cases'}
 							{agent.duration != null && (
 								<> — Temps : {agent.duration.toFixed(2)} s</>
 							)}

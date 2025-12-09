@@ -7,12 +7,13 @@ export class Agent {
   name: string;
   startTime?: Date;
   endTime?: Date;
-  isExploring?: boolean;
+  isExploring: boolean;
   static baseManager: BaseManager;
 
-  constructor(name: string, _id?: string) {
+  constructor(name: string, _id?: string, isExploring: boolean = false) {
     if (_id) this._id = _id;
     this.name = name;
+    this.isExploring = isExploring;
   }
 
   static setBaseManager(manager: BaseManager) {

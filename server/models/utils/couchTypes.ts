@@ -18,15 +18,23 @@ export type DesignDoc = {
   };
 };
 
+export type ViewResult<T> = {
+  rows: Array<{
+    key: string;
+    value: any;
+    doc?: T; // The actual document, if include_docs=true was used
+  }>;
+};
+
 export type AllDocs = {
-  total_rows: number;
-  offset: number;
+  total_rows?: number;
+  offset?: number;
   rows: Array<{
     id: string;
     key: string;
     value: {
       rev: string;
-    };
+    } & any;
     doc?: CellDocument | AgentDocument; // The actual document, if include_docs=true was used
   }>;
 };
@@ -77,13 +85,13 @@ export type CellDocument = Document &
 export type AgentDocument = Document &
   Agent & {
     type: "agent";
-    tilesExplored?: number;
+    // tilesExplored?: number;
     offlineTime?: number; // Seconds
-    // name: string;
+    name: string;
     duration?: number; // Seconds
-    // startTime?: Date;
-    // endTime?: Date;
-    // isExploring?: boolean;
+    startTime?: Date;
+    endTime?: Date;
+    isExploring?: boolean;
   };
 
 export function isAgentDocument(obj: any): obj is AgentDocument {
